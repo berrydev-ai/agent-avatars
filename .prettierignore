@@ -1,0 +1,6 @@
+dist/
+node_modules/
+public/avatars/*.svg
+public/avatars/manifest.json
+generated/avatar-recipes.json
+*.md
