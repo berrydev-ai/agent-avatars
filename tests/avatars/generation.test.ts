@@ -1,0 +1,105 @@
+import { describe, expect, it } from 'vitest';
+import { buildRecipes, generateCatalog } from '../../scripts/avatars/catalog';
+import {
+  normalizeSvg,
+  validatePublishedSvg,
+} from '../../scripts/avatars/svg-validator';
+import { validateManifest } from '../../scripts/avatars/validate';
+
+describe('avatar generation', () => {
+  it('builds exactly 504 deterministic recipes without personal data', () => {
+    const recipes = buildRecipes();
+
+    expect(recipes).toHaveLength(504);
+    expect(new Set(recipes.map((recipe) => recipe.input.seed)).size).toBe(504);
+    expect(JSON.stringify(recipes)).not.toMatch(/@|email|user[-_]?id/i);
+  });
+
+  it('produces byte-identical catalog output for identical inputs', () => {
+    const first = generateCatalog({ avatarsPerStyle: 1 });
+    const second = generateCatalog({ avatarsPerStyle: 1 });
+
+    expect(first.manifest).toEqual(second.manifest);
+    expect(first.recipes).toEqual(second.recipes);
+    expect([...first.assets.entries()]).toEqual([...second.assets.entries()]);
+  });
+
+  it('keeps engine recipes private while publishing searchable metadata', () => {
+    const catalog = generateCatalog({ avatarsPerStyle: 1 });
+    const serialized = JSON.stringify(catalog.manifest);
+
+    expect(catalog.manifest.avatars).toHaveLength(6);
+    expect(catalog.manifest.schemaVersion).toBe(1);
+    expect(catalog.manifest.rights[0]?.spdxExpression).toBe('CC0-1.0');
+    expect(catalog.manifest.tagDefinitions.map(({ key }) => key)).toEqual(
+      expect.arrayContaining([
+        'accessory:glasses',
+        'color:yellow',
+        'expression:smile',
+        'eye:big',
+        'hair:bald',
+        'theme:nerd',
+      ]),
+    );
+    expect(serialized).not.toContain('seed');
+    expect(serialized).not.toContain('glassesVariant');
+  });
+});
+
+describe('manifest validation', () => {
+  it('accepts generated assets and rejects a mismatched hash', async () => {
+    const catalog = generateCatalog({ avatarsPerStyle: 1 });
+    const readAsset = (assetPath: string) => catalog.assets.get(assetPath);
+
+    await expect(
+      validateManifest(catalog.manifest, readAsset, { minimumAvatars: 6 }),
+    ).resolves.toEqual(catalog.manifest);
+
+    const [first, ...rest] = catalog.manifest.avatars;
+    if (!first) throw new Error('Expected a generated avatar.');
+
+    const invalid = {
+      ...catalog.manifest,
+      avatars: [{ ...first, assetSha256: '0'.repeat(64) }, ...rest],
+    };
+
+    await expect(
+      validateManifest(invalid, readAsset, { minimumAvatars: 6 }),
+    ).rejects.toThrow(/hash/i);
+  });
+});
+
+describe('SVG publication safety', () => {
+  it('normalizes DiceBear mask CSS into a static presentation attribute', () => {
+    for (const maskType of ['alpha', 'luminance']) {
+      const normalized = normalizeSvg(
+        `<svg width="1" height="1" viewBox="0 0 1 1"><mask id="m" style="mask-type:${maskType}"><rect width="1" height="1" /></mask></svg>`,
+      );
+
+      expect(Buffer.from(normalized).toString('utf8')).toContain(
+        `mask-type="${maskType}"`,
+      );
+      expect(() => validatePublishedSvg(normalized)).not.toThrow();
+    }
+  });
+
+  it('rejects scripts, event handlers, and external references', () => {
+    expect(() =>
+      validatePublishedSvg(
+        Buffer.from('<svg viewBox="0 0 1 1"><script>alert(1)</script></svg>'),
+      ),
+    ).toThrow(/script/i);
+    expect(() =>
+      validatePublishedSvg(
+        Buffer.from('<svg viewBox="0 0 1 1"><path onload="x" /></svg>'),
+      ),
+    ).toThrow(/event/i);
+    expect(() =>
+      validatePublishedSvg(
+        Buffer.from(
+          '<svg viewBox="0 0 1 1"><use href="https://evil.example/x" /></svg>',
+        ),
+      ),
+    ).toThrow(/reference/i);
+  });
+});
