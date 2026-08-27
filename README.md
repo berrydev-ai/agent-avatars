@@ -12,6 +12,7 @@ Implementation starts from these approved documents:
 - [`tasks/plan.md`](tasks/plan.md) — staged delivery plan and ownership
 - [`docs/specs/mvp.md`](docs/specs/mvp.md) — product and engineering specification
 - [`docs/decisions/0001-mvp-architecture.md`](docs/decisions/0001-mvp-architecture.md) — architecture decision record
+- [`docs/decisions/0002-generator-adapters-and-provenance.md`](docs/decisions/0002-generator-adapters-and-provenance.md) — multi-generator and AI-ready boundary
 - [`docs/contracts/mvp-contracts.md`](docs/contracts/mvp-contracts.md) — avatar, data, client, environment, and licensing contracts
 - [`docs/acceptance-test-matrix.md`](docs/acceptance-test-matrix.md) — executable release requirements
 

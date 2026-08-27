@@ -4,9 +4,9 @@
 
 Deliver a polished, responsive library at `agent-avatars.dev` where anyone can
 find and use a pre-generated agent avatar. Visitors can combine text search and
-trait filters, then download an SVG, open its canonical asset URL, or copy that
-URL. A user can create an email/password account, save favorites, and maintain
-ordered collections named Agent Teams.
+trait filters, then download the published image, open its canonical asset URL,
+or copy that URL. A user can create an email/password account, save favorites,
+and maintain ordered collections named Agent Teams.
 
 Success means the complete public experience works from static assets even when
 the authenticated backend is unavailable, private records are isolated by
@@ -20,10 +20,10 @@ treats these as decisions rather than open questions:
 
 1. The MVP is a modern-browser web application, not a native app.
 2. React, TypeScript, and Vite produce a static Cloudflare Pages site.
-3. DiceBear runs only in pinned generation tooling; at least 500 SVGs are
-   committed or emitted as deterministic build inputs.
-4. Only reviewed CC0 styles are allowed initially. Every included style still
-   carries machine-readable source and license evidence.
+3. A build-time generator registry isolates engine-specific recipes. DiceBear 10
+   is the first adapter and produces at least 500 deterministic SVGs for the MVP.
+4. Only reviewed CC0 DiceBear styles are allowed initially. The generator-neutral
+   manifest still carries machine-readable rights and provenance for every asset.
 5. Supabase Auth/Postgres owns accounts, favorites, Agent Teams, and ordered
    membership; RLS is the user-isolation boundary.
 6. Production deployment, DNS/nameserver changes, provider access, and spend are
@@ -34,7 +34,7 @@ treats these as decisions rather than open questions:
 | Module ID | Responsibility | Depends on |
 |---|---|---|
 | `shared-scaffold` | root package/lockfile, Vite/TypeScript/Vitest configuration, command names | this specification and contracts |
-| `avatar-catalog` | deterministic assets/manifest, search/filter UI, avatar actions | `shared-scaffold` |
+| `avatar-catalog` | generator registry/adapters, assets/manifest, search/filter UI, avatar actions | `shared-scaffold` |
 | `identity-data` | Auth, schema, RLS, policy tests, typed data client | `shared-scaffold` |
 | `delivery` | quality gates, Cloudflare Pages preview, runbook | `shared-scaffold` |
 | `authenticated-ui` | session shell, favorites, Agent Teams UI | all three foundation modules |
@@ -59,21 +59,22 @@ Stage 2 bootstrap checkpoint, not an additional product stage.
 - Render every valid manifest entry in a responsive catalog below the primary
   search and tag controls.
 - Provide a labelled text field and explicit Search button. Search by visible
-  labels, aliases, style, ID, and alt text using case- and diacritic-insensitive
-  token matching; optional live updates must not make the button ineffective.
+  labels, aliases, generator, preset, ID, and alt text using case- and
+  diacritic-insensitive token matching; optional live updates must not make the
+  button ineffective.
 - Combine selected tags with AND semantics. Text search and selected tags also
   combine with AND semantics. Tag controls are toggle buttons with an exposed
   selected state.
 - Persist normalized search state in `?q=<text>&tags=<sorted,comma-separated-keys>`
   so a copied page URL reproduces the result.
 - Provide result count, clear-all, and an informative empty state.
-- Lazy-load off-screen SVGs without moving already-laid-out content.
+- Lazy-load off-screen image assets without moving already-laid-out content.
 
 ### Avatar actions
 
-- **Download** fetches the same-origin SVG and saves `<avatar-id>.svg`.
-- **Open** opens the canonical SVG URL in a new context with opener isolation.
-- **Copy link** writes the absolute canonical SVG URL to the clipboard and has
+- **Download** fetches the same-origin asset and saves `<avatar-id>.<extension>`.
+- **Open** opens the canonical asset URL in a new context with opener isolation.
+- **Copy link** writes the absolute canonical asset URL to the clipboard and has
   an accessible fallback when the Clipboard API is unavailable.
 - Every action has visible and screen-reader-announced success/failure feedback;
   repeated clicks must not create stacked stale messages.
@@ -98,9 +99,27 @@ Stage 2 bootstrap checkpoint, not an additional product stage.
 - Empty-team, validation, destructive-confirmation, loading, and error states are
   explicit and keyboard accessible.
 
+## Generator extensibility
+
+- The catalog depends on one generator-neutral `AvatarRecord`, never on DiceBear
+  seed/options or a future AI provider response.
+- Build tooling discovers only statically allowlisted `AvatarGeneratorAdapter`
+  implementations. Each adapter normalizes its recipe, generates bytes, validates
+  media, maps canonical tags, and emits rights/provenance evidence.
+- Published bytes are content-addressed under an immutable generator namespace,
+  so deterministic and stochastic sources share one stable-link rule.
+- CI runs the common contract suite against DiceBear plus a dependency-free
+  synthetic raster fixture. A new source must pass the same suite before its
+  assets can enter the manifest.
+- Future AI adapters remain offline/build-time and pre-generate reviewable assets.
+  They require the separate approval and risk controls in ADR-0002; the MVP does
+  not call an AI provider or add AI secrets/spend.
+
 ## Out of scope for the MVP
 
-- Runtime or user-requested avatar generation, uploads, or SVG editing.
+- Runtime or user-requested avatar generation (procedural or AI), uploads, or
+  image editing. The adapter boundary prepares for future pre-generated sources;
+  it does not authorize an AI provider or user-facing generation feature.
 - Social login, anonymous Supabase users, public profiles, or passwordless auth.
 - Public/shared teams, collaboration, invitations, comments, or user-facing team
   file exports. An operational privacy-request export remains a launch control.
@@ -114,7 +133,8 @@ Stage 2 bootstrap checkpoint, not an additional product stage.
 - Node.js 24 LTS; exact minor version recorded in `.nvmrc` and CI.
 - npm with a committed lockfile and `npm ci` in automation.
 - React + TypeScript with Vite and strict compiler settings.
-- DiceBear core and selected style packages pinned to exact versions.
+- DiceBear 10 `@dicebear/core` and `@dicebear/styles` pinned to exact versions;
+  use the current `Style`/`Avatar` API and selected style JSON definitions.
 - `supabase-js` browser client and a project-pinned Supabase CLI dev dependency.
 - Vitest + Testing Library, pgTAP through Supabase CLI, and Playwright.
 - Modern production browsers in the latest two stable major releases of Chrome,
@@ -132,8 +152,8 @@ steps:
 |---|---|
 | `npm ci` | install exactly the lockfile |
 | `npm run dev` | start the Vite app using local public environment values |
-| `npm run generate:avatars` | regenerate assets, manifest, tags, and license inventory |
-| `npm run validate:manifest` | validate schemas, references, uniqueness, order, hashes, and licenses without mutation |
+| `npm run generate:avatars` | run the allowlisted generator registry and emit assets, manifest, tags, rights, and provenance |
+| `npm run validate:manifest` | validate adapter contracts, media safety, schemas, references, uniqueness, order, hashes, rights, and provenance without mutation |
 | `npm run format:check` | check formatting without rewriting files |
 | `npm run lint` | run static lint with warnings treated as failures |
 | `npm run typecheck` | run strict TypeScript checks without emitting |
@@ -150,8 +170,9 @@ same underlying commands, not materially different shortcuts.
 
 ```text
 docs/                          architecture, contracts, runbooks, acceptance matrix
-public/avatars/                generated SVGs and manifest.json
-scripts/avatars/               deterministic generator, tag adapters, validators
+public/avatars/                generated image assets and manifest.json
+scripts/avatars/               registry, generator adapters, tag mappers, validators
+generated/                     approved non-sensitive recipes, rights/provenance, withdrawal ledger
 src/app/                       app shell, routing/query state, providers
 src/features/catalog/          public search, filters, grid, actions
 src/features/auth/             session and email/password UI
@@ -208,14 +229,18 @@ export async function setFavorite(
 - **Performance:** Lighthouse/DevTools on a populated production build using the
   budgets in the acceptance matrix; record configuration and artifact.
 
-Tests must control time, network/provider fixtures, random seeds, and generated
-ordering. No test may depend on production data or production credentials.
+Tests must control time, network/provider fixtures, deterministic recipes,
+stochastic outputs, and generated ordering. No test may depend on production
+data or production credentials.
 
 ## Security and privacy requirements
 
 - Treat manifest JSON, URL parameters, Supabase responses, and Auth state as
   untrusted at their entry points.
-- Pre-generate and validate SVGs; never render user-provided SVG/HTML.
+- Pre-generate and validate every media type. Sanitize SVG; decode/re-encode and
+  strip disallowed metadata from raster output; never render user-provided media.
+- Withdraw disputed/harmful assets through the append-only ledger, origin
+  deletion, exact-URL CDN purge, safe DB tombstone, and edge/origin verification.
 - Enable RLS and explicit grants on every exposed table. Test absence of access,
   not only happy-path access.
 - Use only a Supabase public publishable key in the browser. Secret/service-role,
@@ -263,15 +288,19 @@ ordering. No test may depend on production data or production credentials.
   interface.
 - Add tests with behavior changes and run the relevant verification commands.
 - Preserve anonymous catalog behavior when authenticated services fail.
-- Keep generation inputs, package versions, license records, and output hashes
-  reviewable in source control.
+- Keep generation inputs, engine/model versions, rights records, provenance, and
+  output hashes reviewable in source control.
+- Keep generator-specific recipes behind adapters; catalog consumers use only the
+  common asset, tag, rights, and provenance contract.
 - Make database migrations forward-only, reproducible from an empty local stack,
   and covered by policy tests.
 
 ### Ask first
 
-- Add a non-development runtime, Pages Function, custom API, paid service, new
-  avatar license class, analytics, third-party scripts, or user-generated data.
+- Add a non-development runtime, Pages Function, custom API, paid/external
+  generator, AI model/provider, new avatar rights class, analytics, third-party
+  scripts, or user-generated data. AI also requires provider-specific risk,
+  safety, privacy, credentials, spend, and publication approval.
 - Change stable ID/path rules, public tag keys, table/function contracts, auth
   method, supported-browser policy, or performance budgets.
 - Mutate a remote Supabase project, Cloudflare project/zone, GitHub settings,
@@ -280,7 +309,8 @@ ordering. No test may depend on production data or production credentials.
 ### Never
 
 - Commit secrets or expose privileged keys through `VITE_*` variables.
-- Generate avatars at request time or depend on an unpinned external asset URL.
+- Generate avatars at request time, load generator plugins dynamically, or depend
+  on an unpinned external asset URL.
 - Disable RLS to make a client operation pass.
 - Trust or inject raw SVG/HTML from users, URL state, or providers.
 - edit generated artifacts by hand; change the generator input and regenerate.
@@ -308,8 +338,10 @@ repository files.
 
 ## Success criteria
 
-- The manifest contains at least 500 unique, valid, deterministic CC0-approved
-  avatars and covers the product's example traits through canonical tags or
+- The DiceBear adapter produces at least 500 unique, valid, deterministic,
+  CC0-approved avatars; a synthetic second adapter proves mixed-generator and
+  raster compatibility without a second production dependency.
+- The manifest covers the product's example traits through canonical tags or
   aliases: smile, glasses, nerd, bald, yellow, and big eyes.
 - All public and authenticated behaviors above work after reload and report
   useful error states.

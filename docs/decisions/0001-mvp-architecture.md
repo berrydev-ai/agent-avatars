@@ -10,8 +10,8 @@ Accepted
 
 ## Context
 
-Agent Avatars needs a fast public catalog of at least 500 deterministic SVG
-avatars, searchable trait metadata, stable asset links, and three per-avatar
+Agent Avatars needs a fast public catalog of at least 500 pre-generated avatar
+assets, searchable trait metadata, stable asset links, and three per-avatar
 actions. Signed-in users also need private favorites and ordered Agent Teams.
 The project should start at approximately $0/month, support parallel frontend,
 backend, platform, and QA work, and reserve DNS, production access, and spend for
@@ -27,15 +27,15 @@ runtime avatar generation.
 ### Frontend and public catalog
 
 Build a TypeScript React single-page application with Vite on Node.js 24 LTS.
-The browser loads a generated, versioned JSON manifest and immutable SVG assets
+The browser loads a generated, versioned JSON manifest and immutable image assets
 from the same origin. Search and selected tag keys are encoded in the URL query
 string. The catalog remains fully usable without an account or Supabase session.
 
-Generate assets in repository tooling with pinned DiceBear packages. Generation
-inputs, a manual render-contract version, and canonical JSON produce a stable
-avatar ID. Assets are never generated through a runtime HTTP service. A changed
-render input or generator upgrade that can change pixels must produce a new ID;
-metadata-only corrections may keep the ID.
+Generate assets through the build-time registry in ADR-0002. DiceBear 10 is the
+first adapter, not a catalog-level dependency. Published bytes produce a
+content-addressed ID, while the manifest carries generator-neutral rights and
+provenance references. Assets are never generated through a runtime HTTP service
+in the MVP; metadata-only corrections may keep the ID.
 
 ### Data and authentication boundary
 
@@ -77,7 +77,7 @@ adds cross-browser, accessibility, performance, privacy, and security evidence.
 | Module | Owns | May depend on |
 |---|---|---|
 | `shared-scaffold` | root package/lockfile and Vite/TypeScript/test command configuration | approved contracts only |
-| `avatar-catalog` | generation, licenses, manifest, SVG assets, public browsing/actions | `shared-scaffold` |
+| `avatar-catalog` | generator registry/adapters, rights/provenance, manifest, image assets, public browsing/actions | `shared-scaffold` |
 | `identity-data` | Supabase migrations, Auth integration primitives, RLS, catalog-ID sync, typed data client | `shared-scaffold` |
 | `delivery` | CI, build contract, preview Pages configuration and runbook | `shared-scaffold` |
 | `authenticated-ui` | session UI, favorites, Agent Teams | `avatar-catalog`, `identity-data`, `delivery` |
@@ -101,8 +101,11 @@ cache, and secret-management work without satisfying an accepted requirement.
 ### Runtime avatar generation or third-party avatar URLs
 
 Rejected. It would make availability, performance, canonical links, generator
-upgrades, and license evidence dependent on a runtime service. Pre-generation
-makes output reviewable, cacheable, reproducible, and deployable with the app.
+upgrades, and rights/provenance evidence dependent on a runtime service.
+Pre-generation makes output reviewable, cacheable, reproducible, and deployable
+with the app.
+Future AI providers may be called only by approved offline/build tooling that
+materializes reviewed assets before deployment, as defined in ADR-0002.
 
 ### Custom REST API or Cloudflare Pages Functions
 
@@ -127,8 +130,8 @@ free-tier envelope.
 - Frontend, backend, and platform work can proceed independently from the
   contracts in `docs/contracts/mvp-contracts.md`.
 - RLS and least-privilege grants are release requirements, not optional defense.
-- Avatar package/style upgrades are data migrations because they can change IDs
-  or output.
+- Generator engine/model/style upgrades are reviewed content changes because they
+  can change IDs, output, usage rights, or provenance.
 - Preview builds must use development Supabase resources; production credentials,
   DNS, and custom-domain changes remain launch-gated.
 - If later requirements need secrets, privileged integration, shared teams, or
@@ -137,6 +140,7 @@ free-tier envelope.
 ## References
 
 - [Approved implementation plan](../../tasks/plan.md)
+- [ADR-0002: Generator adapters and provenance](0002-generator-adapters-and-provenance.md)
 - [Vite getting started](https://vite.dev/guide/)
 - [DiceBear licenses](https://www.dicebear.com/licenses/)
 - [Supabase row-level security](https://supabase.com/docs/guides/database/postgres/row-level-security)
