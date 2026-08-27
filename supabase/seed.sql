@@ -1,0 +1,2 @@
+-- The generated avatar catalog is synchronized explicitly by the privileged
+-- catalog-sync command. Database resets intentionally start with an empty catalog.
