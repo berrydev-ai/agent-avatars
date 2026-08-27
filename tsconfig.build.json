@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "outDir": "dist/identity-data",
+    "rootDir": "src/lib",
+    "types": ["node"]
+  },
+  "include": ["src/lib/contracts/**/*.ts", "src/lib/supabase/**/*.ts"],
+  "exclude": ["**/*.test.ts"]
+}
