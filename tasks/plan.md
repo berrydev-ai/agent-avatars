@@ -2,15 +2,15 @@
 
 ## Overview
 
-Build a public, searchable library of pre-generated SVG avatars at `agent-avatars.dev`. Visitors can filter by descriptive tags, download an avatar, open its canonical asset URL, or copy that URL. Signed-in users can save favorites and organize selected avatars into named Agent Teams.
+Build a public, searchable library of pre-generated avatar assets at `agent-avatars.dev`. Visitors can filter by descriptive tags, download an avatar, open its canonical asset URL, or copy that URL. Signed-in users can save favorites and organize selected avatars into named Agent Teams.
 
 The repository currently contains only a README and license. This plan therefore starts with contracts and project scaffolding, delivers public and authenticated vertical slices in parallel where safe, and places production deployment behind an explicit owner approval gate.
 
 ## Proposed Architecture
 
 - **Frontend:** React, TypeScript, and Vite as a static single-page application. Use accessible semantic components, responsive CSS, lazy-loaded images, and URL-backed search/filter state.
-- **Avatar generation:** Pin DiceBear packages and generate SVGs plus a typed JSON manifest during development/build tooling. Start with CC0 styles to minimize attribution complexity, while retaining a license inventory for every included style. DiceBear's software is MIT licensed, but style licenses vary.
-- **Catalog:** Pre-generate at least 500 deterministic avatars. Each manifest entry includes a stable ID, style, seed, canonical asset path, alt text, and normalized tags such as expression, accessories, hair, color, and eye traits.
+- **Avatar generation:** Use a build-time generator registry with typed adapters. DiceBear 10 is the first adapter and generates the MVP's deterministic SVGs through its pinned native library. Additional procedural/open-source generators can be added without changing catalog consumers; AI generators use the same boundary later but require a separate provider, rights, safety, privacy, credential, and spend approval.
+- **Catalog:** Pre-generate at least 500 avatars. Content-addressed IDs and a generator-neutral manifest record media type, canonical asset path, normalized tags, usage rights, and provenance. Generator-specific recipes (DiceBear style/seed/options or a future model/prompt recipe) stay behind the adapter boundary.
 - **Backend:** Supabase Auth and Postgres. Keep public catalog assets static; seed catalog IDs in Postgres so favorites and team membership have referential integrity. Protect all user-owned tables with row-level security.
 - **Hosting:** Cloudflare Pages for the static application and custom apex domain. Use Supabase's free tier for the MVP, with a documented upgrade trigger because inactive free projects can pause.
 - **Quality:** Unit/component tests for generation, filtering, and user actions; integration tests for Supabase policies; Playwright coverage for the critical public and authenticated flows; automated lint, type-check, test, and production-build gates.
@@ -29,11 +29,11 @@ Public users may read `avatars`. Row-level security limits every write and every
 
 ### Stage 1: Contracts
 
-- Define the MVP specification, architecture decision record, repository conventions, data contracts, licensing rules, and executable acceptance-test matrix.
+- Define the MVP specification, architecture decision records, generator adapter/provenance boundary, repository conventions, data contracts, usage-rights rules, and executable acceptance-test matrix.
 
 ### Stage 2: Parallel foundations
 
-- Build the deterministic avatar generator, static catalog, search/tag UI, and per-avatar actions.
+- Build the DiceBear 10 adapter, generator-registry contract fixtures, static catalog, search/tag UI, and media-neutral per-avatar actions.
 - Implement Supabase authentication, schema, migrations, seed synchronization, and row-level security for favorites and Agent Teams.
 - Establish continuous integration and a non-production Cloudflare Pages preview path without touching production DNS.
 
@@ -66,7 +66,7 @@ Tasks are tracked as staged child issues of BD-10 in Multica. They remain in `ba
 ### After Stage 1
 
 - The architecture and data contracts are explicit.
-- Licensing policy covers every chosen avatar style.
+- The rights/provenance policy covers every selected generator and preset.
 - Every MVP behavior has a testable acceptance criterion.
 
 ### After Stage 2
@@ -102,9 +102,12 @@ Tasks are tracked as staged child issues of BD-10 in Multica. They remain in `ba
 | Risk | Impact | Mitigation |
 |---|---|---|
 | Search tags do not match visible avatar traits | High | Derive tags from generation inputs, validate a sample visually, and keep curated overrides in source control. |
-| Avatar style licensing is mishandled | High | Default to CC0 styles, pin versions, generate a machine-readable license inventory, and review it before release. |
+| Generator output rights are mishandled | High | Default the MVP to reviewed CC0 DiceBear styles; require machine-readable rights/provenance and a fail-closed onboarding review for every adapter. |
+| A generator-specific schema blocks future sources | High | Keep recipes behind typed adapters and make IDs, assets, tags, rights, and provenance generator-neutral; test with a synthetic second adapter. |
+| AI output introduces safety, privacy, IP, or spend risk | High | Keep AI generation out of the MVP runtime; require a provider-specific ADR, owner approval, risk evaluation, moderation, rights review, provenance, and pre-generated artifacts before publishing. |
+| A disputed asset remains reachable after withdrawal | High | Keep append-only tombstones, remove the origin object, purge only the exact CDN URL, verify edge/origin unavailability, and preserve safe saved-collection references. |
 | Supabase row-level security leaks private collections | High | Deny by default, test policies with multiple users, and require independent security review. |
-| Hundreds of SVGs slow the catalog | Medium | Lazy-load images, keep SVG output optimized, avoid rendering hidden detail, and enforce a performance budget. |
+| Hundreds of mixed image assets slow the catalog | Medium | Lazy-load images, normalize/optimize each approved media type, avoid rendering hidden detail, and enforce a performance budget. |
 | Free backend pauses after inactivity | Medium | Document the limitation, monitor launch usage, and define the Pro upgrade trigger before production. |
 | Production DNS or provider access is unavailable | High | Build and verify previews first; request only the minimum Cloudflare, Supabase, and domain access at the launch gate. |
 
@@ -118,3 +121,5 @@ Approval authorizes promotion of Stage 1. It does not authorize production deplo
 - [Cloudflare Pages custom domains](https://developers.cloudflare.com/pages/configuration/custom-domains/)
 - [Supabase pricing and free-tier limits](https://supabase.com/pricing)
 - [DiceBear license overview](https://www.dicebear.com/licenses/)
+- [NIST Generative AI Profile](https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-generative-artificial-intelligence)
+- [C2PA specifications](https://spec.c2pa.org/specifications/)
