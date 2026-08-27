@@ -42,6 +42,18 @@ begin
 end
 $$;
 
+create function private.current_user_id()
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select auth.uid()
+$$;
+
+revoke execute on function private.current_user_id() from public, anon, authenticated;
+
 create table public.profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   created_at timestamptz not null default pg_catalog.now(),
@@ -195,26 +207,52 @@ grant select, insert, delete on table public.favorites to app_private_writer;
 grant select, insert, delete on table public.agent_teams to app_private_writer;
 grant update (name) on table public.agent_teams to app_private_writer;
 grant select, insert, delete on table public.agent_team_avatars to app_private_writer;
+grant usage on schema private to app_private_writer;
+grant execute on function private.current_user_id() to app_private_writer;
 
 create policy profiles_select_own
 on public.profiles for select to authenticated
 using ((select auth.uid()) is not null and (select auth.uid()) = user_id);
 
+create policy profiles_writer_select_own
+on public.profiles for select to app_private_writer
+using (
+  (select private.current_user_id()) is not null
+  and (select private.current_user_id()) = user_id
+);
+
 create policy avatars_select_public
 on public.avatars for select to anon, authenticated
+using (true);
+
+create policy avatars_writer_select
+on public.avatars for select to app_private_writer
 using (true);
 
 create policy favorites_select_own
 on public.favorites for select to authenticated
 using ((select auth.uid()) is not null and (select auth.uid()) = user_id);
 
+create policy favorites_writer_select_own
+on public.favorites for select to app_private_writer
+using (
+  (select private.current_user_id()) is not null
+  and (select private.current_user_id()) = user_id
+);
+
 create policy favorites_writer_insert_own
 on public.favorites for insert to app_private_writer
-with check ((select auth.uid()) is not null and (select auth.uid()) = user_id);
+with check (
+  (select private.current_user_id()) is not null
+  and (select private.current_user_id()) = user_id
+);
 
 create policy favorites_writer_delete_own
 on public.favorites for delete to app_private_writer
-using ((select auth.uid()) is not null and (select auth.uid()) = user_id);
+using (
+  (select private.current_user_id()) is not null
+  and (select private.current_user_id()) = user_id
+);
 
 create policy agent_teams_select_own
 on public.agent_teams for select to authenticated
@@ -222,20 +260,35 @@ using ((select auth.uid()) is not null and (select auth.uid()) = user_id);
 
 create policy agent_teams_writer_select_own
 on public.agent_teams for select to app_private_writer
-using ((select auth.uid()) is not null and (select auth.uid()) = user_id);
+using (
+  (select private.current_user_id()) is not null
+  and (select private.current_user_id()) = user_id
+);
 
 create policy agent_teams_writer_insert_own
 on public.agent_teams for insert to app_private_writer
-with check ((select auth.uid()) is not null and (select auth.uid()) = user_id);
+with check (
+  (select private.current_user_id()) is not null
+  and (select private.current_user_id()) = user_id
+);
 
 create policy agent_teams_writer_update_own
 on public.agent_teams for update to app_private_writer
-using ((select auth.uid()) is not null and (select auth.uid()) = user_id)
-with check ((select auth.uid()) is not null and (select auth.uid()) = user_id);
+using (
+  (select private.current_user_id()) is not null
+  and (select private.current_user_id()) = user_id
+)
+with check (
+  (select private.current_user_id()) is not null
+  and (select private.current_user_id()) = user_id
+);
 
 create policy agent_teams_writer_delete_own
 on public.agent_teams for delete to app_private_writer
-using ((select auth.uid()) is not null and (select auth.uid()) = user_id);
+using (
+  (select private.current_user_id()) is not null
+  and (select private.current_user_id()) = user_id
+);
 
 create policy agent_team_avatars_select_own
 on public.agent_team_avatars for select to authenticated
@@ -252,36 +305,36 @@ using (
 create policy agent_team_avatars_writer_select_own
 on public.agent_team_avatars for select to app_private_writer
 using (
-  (select auth.uid()) is not null
+  (select private.current_user_id()) is not null
   and exists (
     select 1
     from public.agent_teams
     where agent_teams.id = agent_team_avatars.team_id
-      and agent_teams.user_id = (select auth.uid())
+      and agent_teams.user_id = (select private.current_user_id())
   )
 );
 
 create policy agent_team_avatars_writer_insert_own
 on public.agent_team_avatars for insert to app_private_writer
 with check (
-  (select auth.uid()) is not null
+  (select private.current_user_id()) is not null
   and exists (
     select 1
     from public.agent_teams
     where agent_teams.id = agent_team_avatars.team_id
-      and agent_teams.user_id = (select auth.uid())
+      and agent_teams.user_id = (select private.current_user_id())
   )
 );
 
 create policy agent_team_avatars_writer_delete_own
 on public.agent_team_avatars for delete to app_private_writer
 using (
-  (select auth.uid()) is not null
+  (select private.current_user_id()) is not null
   and exists (
     select 1
     from public.agent_teams
     where agent_teams.id = agent_team_avatars.team_id
-      and agent_teams.user_id = (select auth.uid())
+      and agent_teams.user_id = (select private.current_user_id())
   )
 );
 
@@ -292,7 +345,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_user_id uuid := auth.uid();
+  v_user_id uuid := private.current_user_id();
 begin
   if v_user_id is null then
     raise exception using errcode = 'P0001', message = 'AUTH_REQUIRED';
@@ -332,7 +385,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_user_id uuid := auth.uid();
+  v_user_id uuid := private.current_user_id();
   v_name text := pg_catalog.btrim(p_name);
   v_team public.agent_teams%rowtype;
 begin
@@ -380,7 +433,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_user_id uuid := auth.uid();
+  v_user_id uuid := private.current_user_id();
   v_name text := pg_catalog.btrim(p_name);
   v_team public.agent_teams%rowtype;
 begin
@@ -416,7 +469,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if auth.uid() is null then
+  if private.current_user_id() is null then
     raise exception using errcode = 'P0001', message = 'AUTH_REQUIRED';
   end if;
 
@@ -436,7 +489,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if auth.uid() is null then
+  if private.current_user_id() is null then
     raise exception using errcode = 'P0001', message = 'AUTH_REQUIRED';
   end if;
 
