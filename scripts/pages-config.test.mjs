@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { promisify } from 'node:util';
 
 import {
   inspectPagesOutput,
@@ -11,6 +13,8 @@ import {
   validatePreviewEnvironment,
   validatePublishableKey,
 } from './pages-config.mjs';
+
+const execFileAsync = promisify(execFile);
 
 const validEnvironment = {
   CF_PAGES: '1',
@@ -90,4 +94,32 @@ test('enforces file count, file size, index, and secret-marker gates', async (co
 
   await writeFile(path.join(directory, 'assets', 'app.js'), 'CLOUDFLARE_API_TOKEN');
   await assert.rejects(scanPagesOutputForSecrets(directory), /Potential secret marker/);
+});
+
+test('build wrapper creates and validates deployable Pages output', async (context) => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'pages-build-'));
+  context.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(
+    path.join(directory, 'package.json'),
+    JSON.stringify({
+      private: true,
+      scripts: { build: 'node build-fixture.mjs' },
+    }),
+  );
+  await writeFile(
+    path.join(directory, 'build-fixture.mjs'),
+    "import { mkdir, writeFile } from 'node:fs/promises';\n" +
+      "await mkdir('dist/avatars', { recursive: true });\n" +
+      "await writeFile('dist/index.html', '<!doctype html>');\n" +
+      "await writeFile('dist/avatars/manifest.json', '[]');\n",
+  );
+
+  await execFileAsync(process.execPath, [path.resolve('scripts/pages-build.mjs')], {
+    cwd: directory,
+    env: { ...process.env, ...validEnvironment },
+  });
+
+  const headers = await readFile(path.join(directory, 'dist', '_headers'), 'utf8');
+  assert.match(headers, /Content-Security-Policy/);
+  assert.match(headers, /https:\/\/example\.supabase\.co/);
 });
