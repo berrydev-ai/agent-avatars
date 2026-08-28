@@ -64,11 +64,123 @@ input {
   border-bottom: 0.25rem solid var(--gold);
 }
 
-.site-header > p {
+.site-header > p,
+.account-status {
   margin: 0;
   color: #d9ddd5;
   font-size: 0.875rem;
   text-align: right;
+}
+
+.account-entry {
+  position: relative;
+}
+
+.button-header {
+  min-height: 2.5rem;
+  color: #fffdf7;
+  background: transparent;
+  border-color: #777b74;
+}
+
+.button-header:hover:not(:disabled) {
+  background: #343833;
+  border-color: #b8bcb4;
+}
+
+.account-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #f8f4e9;
+  font-size: 0.875rem;
+}
+
+.account-inline-error {
+  color: #ffe0b0;
+}
+
+.account-panel {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  display: grid;
+  width: min(22rem, calc(100vw - 2rem));
+  gap: 1rem;
+  padding: 1rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 0.0625rem solid var(--line);
+  border-radius: 0.625rem;
+  box-shadow: 0 0.75rem 2rem rgb(32 35 31 / 18%);
+}
+
+.account-panel-heading,
+.account-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.account-panel-heading h2 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.5rem;
+}
+
+.account-tabs {
+  justify-content: flex-start;
+  border-bottom: 0.0625rem solid var(--line);
+}
+
+.account-tabs button {
+  min-height: 2.5rem;
+  padding: 0.5rem;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 0.1875rem solid transparent;
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.account-tabs button[aria-pressed='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--moss);
+}
+
+.account-form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.account-form label {
+  font-size: 0.875rem;
+  font-weight: 750;
+}
+
+.account-form input {
+  min-height: 2.75rem;
+  padding: 0.625rem 0.75rem;
+  color: var(--ink);
+  background: #fff;
+  border: 0.0625rem solid #aaa495;
+  border-radius: 0.375rem;
+}
+
+.field-hint,
+.account-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.account-message[role='alert'] {
+  color: #7d2e24;
+  font-weight: 700;
 }
 
 .brand {
@@ -421,7 +533,8 @@ input {
 }
 
 @media (max-width: 38rem) {
-  .site-header > p {
+  .site-header > p,
+  .account-summary > span:first-child {
     display: none;
   }
 

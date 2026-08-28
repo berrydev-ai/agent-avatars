@@ -9,6 +9,7 @@ import { AvatarCard } from './AvatarCard';
 import { CatalogControls } from './CatalogControls';
 import { filterAvatars } from './search';
 import { parseCatalogQuery, serializeCatalogQuery } from './url-state';
+import { AccountControls } from '../identity/AccountControls';
 
 interface CatalogPageProps {
   manifest: AvatarManifest;
@@ -124,7 +125,7 @@ export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
           </span>
           Agent Avatars
         </a>
-        <p>Distinctive faces for the agents doing the work.</p>
+        <AccountControls />
       </header>
 
       <div className="page-shell">

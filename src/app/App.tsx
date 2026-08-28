@@ -4,6 +4,8 @@ import {
   type AvatarManifest,
 } from '../lib/contracts/avatar';
 import { CatalogPage } from '../features/catalog/CatalogPage';
+import { IdentityProvider } from '../features/identity/IdentityProvider';
+import { createIdentityClients, type IdentityClients } from '../lib/supabase';
 
 type CatalogState =
   | { status: 'loading' }
@@ -13,6 +15,13 @@ type CatalogState =
 export function App() {
   const [catalog, setCatalog] = useState<CatalogState>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  const [identityClients] = useState<IdentityClients | null>(() => {
+    try {
+      return createIdentityClients(import.meta.env, window.sessionStorage);
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -38,10 +47,12 @@ export function App() {
     const configuredOrigin =
       typeof rawConfiguredOrigin === 'string' ? rawConfiguredOrigin : '';
     return (
-      <CatalogPage
-        manifest={catalog.manifest}
-        publicSiteOrigin={configuredOrigin || window.location.origin}
-      />
+      <IdentityProvider clients={identityClients}>
+        <CatalogPage
+          manifest={catalog.manifest}
+          publicSiteOrigin={configuredOrigin || window.location.origin}
+        />
+      </IdentityProvider>
     );
   }
 
