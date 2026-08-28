@@ -47,8 +47,8 @@ jobs:
       - name: Run unit and component tests
         run: npm run test
 
-      - name: Start local database
-        run: npx supabase db start
+      - name: Start local Supabase stack
+        run: npx supabase start
 
       - name: Run database tests
         run: npm run test:db
