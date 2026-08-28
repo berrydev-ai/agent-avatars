@@ -79,7 +79,7 @@ secret markers, and checks provider file limits before upload.
 |---|---|---|
 | `npm ci` fails | `package-lock.json` matches `package.json`; Node matches `.nvmrc` | Regenerate and review the lockfile on its owning scaffold branch |
 | Formatting, lint, types, tests, or build fail | First failing named step and the same local command | Fix the underlying gate; do not skip it |
-| Database tests fail | Docker availability, Supabase CLI output, migration order | Reproduce with `npm run test:db`; never point the test at production |
+| Database tests fail | Docker availability, `supabase db start` output, migration order | Start the local database, reproduce with `npm run test:db`, and never point the test at production |
 | Preview context is rejected | Branch name, full SHA, Pages URL, public Supabase URL/key | Correct protected environment configuration; never substitute production values |
 | Wrangler returns unauthorized | Token scope, account ID, project ownership, expiration | Rotate/re-scope the protected token; do not broaden it to DNS |
 | Auth callback fails | Exact preview origin and `/auth/confirm` allowlist | Add only the reviewed non-production callback |
@@ -123,6 +123,7 @@ npm run format:check
 npm run lint
 npm run typecheck
 npm run test
+npx supabase db start
 npm run test:db
 node --test scripts/pages-config.test.mjs
 npm run build
