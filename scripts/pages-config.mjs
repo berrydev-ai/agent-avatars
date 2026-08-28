@@ -1,5 +1,14 @@
-import { lstat, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { Buffer } from 'node:buffer';
+import {
+  lstat,
+  mkdir,
+  readdir,
+  readFile,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import path from 'node:path';
+import { URL } from 'node:url';
 
 export const CLOUDFLARE_FREE_FILE_LIMIT = 20_000;
 export const CLOUDFLARE_FILE_SIZE_LIMIT = 25 * 1024 * 1024;
@@ -53,7 +62,9 @@ function decodeJwtRole(value) {
   }
 
   try {
-    const payload = JSON.parse(Buffer.from(segments[1], 'base64url').toString('utf8'));
+    const payload = JSON.parse(
+      Buffer.from(segments[1], 'base64url').toString('utf8'),
+    );
     return typeof payload.role === 'string' ? payload.role : undefined;
   } catch {
     return undefined;
@@ -62,10 +73,15 @@ function decodeJwtRole(value) {
 
 export function validatePublishableKey(value) {
   if (!value || /[\r\n]/.test(value)) {
-    throw new Error('VITE_SUPABASE_PUBLISHABLE_KEY is required and must be one line');
+    throw new Error(
+      'VITE_SUPABASE_PUBLISHABLE_KEY is required and must be one line',
+    );
   }
 
-  if (value.startsWith('sb_secret_') || decodeJwtRole(value) === 'service_role') {
+  if (
+    value.startsWith('sb_secret_') ||
+    decodeJwtRole(value) === 'service_role'
+  ) {
     throw new Error(
       'VITE_SUPABASE_PUBLISHABLE_KEY must not contain a secret/service-role key',
     );
@@ -85,12 +101,16 @@ export function validatePreviewEnvironment(environment) {
   }
 
   if (!COMMIT_SHA_PATTERN.test(environment.CF_PAGES_COMMIT_SHA ?? '')) {
-    throw new Error('CF_PAGES_COMMIT_SHA must be a full lowercase Git commit SHA');
+    throw new Error(
+      'CF_PAGES_COMMIT_SHA must be a full lowercase Git commit SHA',
+    );
   }
 
   const pagesUrl = parseOrigin('CF_PAGES_URL', environment.CF_PAGES_URL ?? '');
   if (!pagesUrl.hostname.endsWith('.pages.dev')) {
-    throw new Error('CF_PAGES_URL must use a Cloudflare pages.dev preview origin');
+    throw new Error(
+      'CF_PAGES_URL must use a Cloudflare pages.dev preview origin',
+    );
   }
 
   if (environment.VITE_APP_ENV !== 'preview') {
@@ -102,7 +122,9 @@ export function validatePreviewEnvironment(environment) {
     : pagesUrl;
 
   if (siteUrl.origin !== pagesUrl.origin) {
-    throw new Error('VITE_PUBLIC_SITE_URL must match CF_PAGES_URL for preview builds');
+    throw new Error(
+      'VITE_PUBLIC_SITE_URL must match CF_PAGES_URL for preview builds',
+    );
   }
 
   const supabaseUrl = parseOrigin(
@@ -196,7 +218,9 @@ export async function inspectPagesOutput(
     throw new Error('Pages output must contain dist/index.html');
   }
   if (files.length > fileLimit) {
-    throw new Error(`Pages output has ${files.length} files; limit is ${fileLimit}`);
+    throw new Error(
+      `Pages output has ${files.length} files; limit is ${fileLimit}`,
+    );
   }
 
   let largest = { relativePath: '', size: 0 };

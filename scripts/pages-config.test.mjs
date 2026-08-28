@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import { Buffer } from 'node:buffer';
 import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import process from 'node:process';
 import test from 'node:test';
 import { promisify } from 'node:util';
 
@@ -34,7 +36,11 @@ test('normalizes an approved preview environment', () => {
 
 test('rejects production branches and non-Pages origins', () => {
   assert.throws(
-    () => validatePreviewEnvironment({ ...validEnvironment, CF_PAGES_BRANCH: 'main' }),
+    () =>
+      validatePreviewEnvironment({
+        ...validEnvironment,
+        CF_PAGES_BRANCH: 'main',
+      }),
     /non-production branch/,
   );
   assert.throws(
@@ -48,11 +54,17 @@ test('rejects production branches and non-Pages origins', () => {
 });
 
 test('rejects a Supabase service-role key', () => {
-  const payload = Buffer.from(JSON.stringify({ role: 'service_role' })).toString(
-    'base64url',
+  const payload = Buffer.from(
+    JSON.stringify({ role: 'service_role' }),
+  ).toString('base64url');
+  assert.throws(
+    () => validatePublishableKey(`header.${payload}.signature`),
+    /service-role/,
   );
-  assert.throws(() => validatePublishableKey(`header.${payload}.signature`), /service-role/);
-  assert.throws(() => validatePublishableKey('sb_secret_not_public'), /service-role/);
+  assert.throws(
+    () => validatePublishableKey('sb_secret_not_public'),
+    /service-role/,
+  );
 });
 
 test('renders the required CSP and cache policy', () => {
@@ -92,8 +104,14 @@ test('enforces file count, file size, index, and secret-marker gates', async (co
     /per-file limit is 100/,
   );
 
-  await writeFile(path.join(directory, 'assets', 'app.js'), 'CLOUDFLARE_API_TOKEN');
-  await assert.rejects(scanPagesOutputForSecrets(directory), /Potential secret marker/);
+  await writeFile(
+    path.join(directory, 'assets', 'app.js'),
+    'CLOUDFLARE_API_TOKEN',
+  );
+  await assert.rejects(
+    scanPagesOutputForSecrets(directory),
+    /Potential secret marker/,
+  );
 });
 
 test('build wrapper creates and validates deployable Pages output', async (context) => {
@@ -114,12 +132,19 @@ test('build wrapper creates and validates deployable Pages output', async (conte
       "await writeFile('dist/avatars/manifest.json', '[]');\n",
   );
 
-  await execFileAsync(process.execPath, [path.resolve('scripts/pages-build.mjs')], {
-    cwd: directory,
-    env: { ...process.env, ...validEnvironment },
-  });
+  await execFileAsync(
+    process.execPath,
+    [path.resolve('scripts/pages-build.mjs')],
+    {
+      cwd: directory,
+      env: { ...process.env, ...validEnvironment },
+    },
+  );
 
-  const headers = await readFile(path.join(directory, 'dist', '_headers'), 'utf8');
+  const headers = await readFile(
+    path.join(directory, 'dist', '_headers'),
+    'utf8',
+  );
   assert.match(headers, /Content-Security-Policy/);
   assert.match(headers, /https:\/\/example\.supabase\.co/);
 });

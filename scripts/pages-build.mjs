@@ -34,6 +34,6 @@ await writePagesHeaders('dist', environment.VITE_SUPABASE_URL);
 const summary = await inspectPagesOutput('dist');
 await scanPagesOutputForSecrets('dist');
 
-console.log(
-  `Pages output validated: ${summary.fileCount} files; largest is ${summary.largest.relativePath} (${summary.largest.size} bytes)`,
+process.stdout.write(
+  `Pages output validated: ${summary.fileCount} files; largest is ${summary.largest.relativePath} (${summary.largest.size} bytes)\n`,
 );
