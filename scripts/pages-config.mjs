@@ -78,12 +78,11 @@ export function validatePublishableKey(value) {
     );
   }
 
-  if (
-    value.startsWith('sb_secret_') ||
-    decodeJwtRole(value) === 'service_role'
-  ) {
+  const isPublishableKey = /^sb_publishable_[A-Za-z0-9_-]+$/.test(value);
+  const isLegacyAnonKey = decodeJwtRole(value) === 'anon';
+  if (!isPublishableKey && !isLegacyAnonKey) {
     throw new Error(
-      'VITE_SUPABASE_PUBLISHABLE_KEY must not contain a secret/service-role key',
+      'VITE_SUPABASE_PUBLISHABLE_KEY must be a publishable or legacy anon key',
     );
   }
 }
