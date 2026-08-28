@@ -82,6 +82,9 @@ jobs:
       - name: Install from lockfile
         run: npm ci
 
+      - name: Start local Supabase stack
+        run: npx supabase start
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
 

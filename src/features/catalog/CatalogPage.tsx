@@ -9,6 +9,9 @@ import { AvatarCard } from './AvatarCard';
 import { CatalogControls } from './CatalogControls';
 import { filterAvatars } from './search';
 import { parseCatalogQuery, serializeCatalogQuery } from './url-state';
+import { AccountControls } from '../identity/AccountControls';
+import { useOptionalCollections } from '../collections/collections-context';
+import { TeamsPanel } from '../collections/TeamsPanel';
 
 interface CatalogPageProps {
   manifest: AvatarManifest;
@@ -21,6 +24,10 @@ interface ActionFeedback {
 }
 
 export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
+  const collections = useOptionalCollections();
+  const selectedTeam = collections?.teams.find(
+    ({ id }) => id === collections.selectedTeamId,
+  );
   const knownTags = useMemo(
     () => new Set(manifest.tagDefinitions.map(({ key }) => key)),
     [manifest.tagDefinitions],
@@ -32,19 +39,36 @@ export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
   const [query, setQuery] = useState(initialState.query);
   const [draftQuery, setDraftQuery] = useState(initialState.query);
   const [selectedTags, setSelectedTags] = useState(initialState.tags);
+  const [favoritesOnly, setFavoritesOnly] = useState(
+    Boolean(initialState.favoritesOnly),
+  );
   const [feedback, setFeedback] = useState<ActionFeedback>({ message: '' });
   const [busyAction, setBusyAction] = useState('');
   const tagDefinitions = useMemo(
     () => new Map(manifest.tagDefinitions.map((tag) => [tag.key, tag])),
     [manifest.tagDefinitions],
   );
-  const results = useMemo(
-    () => filterAvatars(manifest.avatars, manifest, query, selectedTags),
-    [manifest, query, selectedTags],
-  );
+  const results = useMemo(() => {
+    const filtered = filterAvatars(
+      manifest.avatars,
+      manifest,
+      query,
+      selectedTags,
+    );
+    if (!(favoritesOnly && collections?.authenticated)) return filtered;
+    return filtered.filter(({ id }) => collections.favoriteIds.has(id));
+  }, [collections, favoritesOnly, manifest, query, selectedTags]);
 
-  function updateUrl(nextQuery: string, nextTags: readonly TagKey[]): void {
-    const search = serializeCatalogQuery({ query: nextQuery, tags: nextTags });
+  function updateUrl(
+    nextQuery: string,
+    nextTags: readonly TagKey[],
+    nextFavoritesOnly = favoritesOnly,
+  ): void {
+    const search = serializeCatalogQuery({
+      query: nextQuery,
+      tags: nextTags,
+      favoritesOnly: nextFavoritesOnly,
+    });
     window.history.replaceState(
       window.history.state,
       '',
@@ -71,7 +95,7 @@ export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
     setDraftQuery('');
     setQuery('');
     setSelectedTags([]);
-    updateUrl('', []);
+    updateUrl('', [], favoritesOnly);
   }
 
   async function handleDownload(avatar: AvatarRecord): Promise<void> {
@@ -124,7 +148,7 @@ export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
           </span>
           Agent Avatars
         </a>
-        <p>Distinctive faces for the agents doing the work.</p>
+        <AccountControls />
       </header>
 
       <div className="page-shell">
@@ -148,6 +172,36 @@ export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
           onReset={reset}
         />
 
+        {collections?.authenticated ? (
+          <div className="collection-toolbar">
+            <button
+              className="button button-secondary"
+              type="button"
+              aria-pressed={favoritesOnly}
+              disabled={collections.favoriteStatus === 'loading'}
+              onClick={() => {
+                const nextValue = !favoritesOnly;
+                setFavoritesOnly(nextValue);
+                updateUrl(query, selectedTags, nextValue);
+              }}
+            >
+              Saved avatars ({collections.favoriteIds.size})
+            </button>
+          </div>
+        ) : null}
+
+        <TeamsPanel avatars={manifest.avatars} />
+
+        {collections?.message ? (
+          <div
+            className="collection-feedback"
+            role="alert"
+            aria-label="Collection update"
+          >
+            {collections.message}
+          </div>
+        ) : null}
+
         <div className="action-feedback" role="status" aria-live="polite">
           {feedback.message ? <p>{feedback.message}</p> : null}
           {feedback.fallbackUrl ? (
@@ -165,21 +219,61 @@ export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
 
         {results.length > 0 ? (
           <ul className="avatar-grid" aria-label="Avatar catalog">
-            {results.map((avatar) => (
-              <AvatarCard
-                key={avatar.id}
-                avatar={avatar}
-                tagDefinitions={tagDefinitions}
-                busyAction={
-                  busyAction.startsWith(`${avatar.id}:`)
-                    ? busyAction.slice(avatar.id.length + 1)
-                    : undefined
-                }
-                onDownload={(record) => void handleDownload(record)}
-                onOpen={handleOpen}
-                onCopy={(record) => void handleCopy(record)}
-              />
-            ))}
+            {results.map((avatar) => {
+              const isTeamMember = selectedTeam?.avatars.some(
+                ({ avatarId }) => avatarId === avatar.id,
+              );
+              return (
+                <AvatarCard
+                  key={avatar.id}
+                  avatar={avatar}
+                  tagDefinitions={tagDefinitions}
+                  busyAction={
+                    busyAction.startsWith(`${avatar.id}:`)
+                      ? busyAction.slice(avatar.id.length + 1)
+                      : undefined
+                  }
+                  onDownload={(record) => void handleDownload(record)}
+                  onOpen={handleOpen}
+                  onCopy={(record) => void handleCopy(record)}
+                  isFavorite={collections?.favoriteIds.has(avatar.id)}
+                  favoriteBusy={collections?.busyFavoriteIds.has(avatar.id)}
+                  onToggleFavorite={
+                    collections?.authenticated &&
+                    collections.favoriteStatus === 'ready'
+                      ? (record, label) =>
+                          void collections.toggleFavorite(record.id, label)
+                      : undefined
+                  }
+                  teamActionLabel={
+                    selectedTeam
+                      ? `${isTeamMember ? 'Remove from' : 'Add to'} ${selectedTeam.name}`
+                      : undefined
+                  }
+                  teamBusy={
+                    selectedTeam
+                      ? collections?.busyTeamIds.has(selectedTeam.id)
+                      : undefined
+                  }
+                  onTeamAction={
+                    selectedTeam && collections
+                      ? (record) => {
+                          const currentIds = selectedTeam.avatars.map(
+                            ({ avatarId }) => avatarId,
+                          );
+                          const avatarIds = isTeamMember
+                            ? currentIds.filter((id) => id !== record.id)
+                            : [...currentIds, record.id];
+                          void collections.updateTeamMembers({
+                            teamId: selectedTeam.id,
+                            avatarIds,
+                          });
+                        }
+                      : undefined
+                  }
+                />
+              );
+            })}
           </ul>
         ) : (
           <section className="empty-state" aria-labelledby="empty-title">
@@ -187,13 +281,26 @@ export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
               0
             </p>
             <h2 id="empty-title">No avatars match those filters.</h2>
-            <p>Try fewer traits or a broader search.</p>
+            <p>
+              {favoritesOnly && collections?.authenticated
+                ? 'Save an avatar to find it here, or show the full catalog.'
+                : 'Try fewer traits or a broader search.'}
+            </p>
             <button
               className="button button-primary"
               type="button"
-              onClick={reset}
+              onClick={() => {
+                if (favoritesOnly && collections?.authenticated) {
+                  setFavoritesOnly(false);
+                  updateUrl(query, selectedTags, false);
+                } else {
+                  reset();
+                }
+              }}
             >
-              Reset filters
+              {favoritesOnly && collections?.authenticated
+                ? 'Show all avatars'
+                : 'Reset filters'}
             </button>
           </section>
         )}

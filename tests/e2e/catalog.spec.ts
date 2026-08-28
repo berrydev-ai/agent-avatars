@@ -15,11 +15,11 @@ test('search and tag state survives reload with keyboard-visible results', async
   await page.goto('/');
   await expect(page.getByText('504 avatars')).toBeVisible();
 
-  await page.keyboard.press('Tab');
   const search = page.getByRole('searchbox', { name: 'Search avatars' });
-  const brand = page.getByRole('link', { name: 'Agent Avatars home' });
-  if (await brand.evaluate((element) => element === document.activeElement)) {
+  for (let step = 0; step < 5; step += 1) {
     await page.keyboard.press('Tab');
+    if (await search.evaluate((element) => element === document.activeElement))
+      break;
   }
   await expect(search).toBeFocused();
   await search.fill(avatarId);

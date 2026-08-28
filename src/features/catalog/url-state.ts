@@ -3,6 +3,7 @@ import type { TagKey } from '../../lib/contracts/avatar';
 export interface CatalogQueryState {
   query: string;
   tags: readonly TagKey[];
+  favoritesOnly?: boolean;
 }
 
 export function parseCatalogQuery(
@@ -14,7 +15,9 @@ export function parseCatalogQuery(
   const tags = [...new Set((params.get('tags') ?? '').split(','))]
     .filter((tag): tag is TagKey => knownTags.has(tag))
     .sort();
-  return { query, tags };
+  return params.get('view') === 'favorites'
+    ? { query, tags, favoritesOnly: true }
+    : { query, tags };
 }
 
 export function serializeCatalogQuery(state: CatalogQueryState): string {
@@ -23,6 +26,7 @@ export function serializeCatalogQuery(state: CatalogQueryState): string {
   const tags = [...new Set(state.tags)].sort();
   if (query) params.set('q', query);
   if (tags.length > 0) params.set('tags', tags.join(','));
+  if (state.favoritesOnly) params.set('view', 'favorites');
   const value = params.toString();
   return value ? `?${value}` : '';
 }

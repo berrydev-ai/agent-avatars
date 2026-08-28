@@ -4,11 +4,16 @@ import {
   type AvatarManifest,
 } from '../lib/contracts/avatar';
 import { CatalogPage } from '../features/catalog/CatalogPage';
+import { CollectionsProvider } from '../features/collections/CollectionsProvider';
+import { IdentityProvider } from '../features/identity/IdentityProvider';
+import { createIdentityClients, type IdentityClients } from '../lib/supabase';
 
 type CatalogState =
   | { status: 'loading' }
   | { status: 'ready'; manifest: AvatarManifest }
   | { status: 'error' };
+
+const configuredIdentityClients = configureIdentityClients();
 
 export function App() {
   const [catalog, setCatalog] = useState<CatalogState>({ status: 'loading' });
@@ -38,10 +43,14 @@ export function App() {
     const configuredOrigin =
       typeof rawConfiguredOrigin === 'string' ? rawConfiguredOrigin : '';
     return (
-      <CatalogPage
-        manifest={catalog.manifest}
-        publicSiteOrigin={configuredOrigin || window.location.origin}
-      />
+      <IdentityProvider clients={configuredIdentityClients}>
+        <CollectionsProvider>
+          <CatalogPage
+            manifest={catalog.manifest}
+            publicSiteOrigin={configuredOrigin || window.location.origin}
+          />
+        </CollectionsProvider>
+      </IdentityProvider>
     );
   }
 
@@ -88,4 +97,12 @@ export function App() {
       )}
     </main>
   );
+}
+
+function configureIdentityClients(): IdentityClients | null {
+  try {
+    return createIdentityClients(import.meta.env, window.sessionStorage);
+  } catch {
+    return null;
+  }
 }

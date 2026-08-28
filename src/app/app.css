@@ -64,11 +64,130 @@ input {
   border-bottom: 0.25rem solid var(--gold);
 }
 
-.site-header > p {
+.site-header > p,
+.account-status {
   margin: 0;
   color: #d9ddd5;
   font-size: 0.875rem;
   text-align: right;
+}
+
+.account-entry {
+  position: relative;
+}
+
+.button-header {
+  min-height: 2.5rem;
+  color: #fffdf7;
+  background: transparent;
+  border-color: #777b74;
+}
+
+.button-header:hover:not(:disabled) {
+  background: #343833;
+  border-color: #b8bcb4;
+}
+
+.account-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #f8f4e9;
+  font-size: 0.875rem;
+}
+
+.account-inline-error {
+  color: #ffe0b0;
+}
+
+.account-entry > .account-inline-error {
+  max-width: 24rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  text-align: right;
+}
+
+.account-panel {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  display: grid;
+  width: min(22rem, calc(100vw - 2rem));
+  gap: 1rem;
+  padding: 1rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 0.0625rem solid var(--line);
+  border-radius: 0.625rem;
+  box-shadow: 0 0.75rem 2rem rgb(32 35 31 / 18%);
+}
+
+.account-panel-heading,
+.account-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.account-panel-heading h2 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.5rem;
+}
+
+.account-tabs {
+  justify-content: flex-start;
+  border-bottom: 0.0625rem solid var(--line);
+}
+
+.account-tabs button {
+  min-height: 2.5rem;
+  padding: 0.5rem;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 0.1875rem solid transparent;
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.account-tabs button[aria-pressed='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--moss);
+}
+
+.account-form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.account-form label {
+  font-size: 0.875rem;
+  font-weight: 750;
+}
+
+.account-form input {
+  min-height: 2.75rem;
+  padding: 0.625rem 0.75rem;
+  color: var(--ink);
+  background: #fff;
+  border: 0.0625rem solid #aaa495;
+  border-radius: 0.375rem;
+}
+
+.field-hint,
+.account-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.account-message[role='alert'] {
+  color: #7d2e24;
+  font-weight: 700;
 }
 
 .brand {
@@ -280,6 +399,219 @@ input {
   margin-bottom: 1rem;
 }
 
+.collection-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: -0.5rem 0 1rem;
+}
+
+.collection-toolbar [aria-pressed='true'] {
+  color: #fff;
+  background: var(--moss);
+  border-color: var(--moss);
+}
+
+.collection-feedback {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  color: var(--moss-dark);
+  background: #e6eddf;
+  border-left: 0.25rem solid var(--moss);
+  font-weight: 700;
+}
+
+.teams-panel {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.teams-toggle {
+  justify-self: end;
+}
+
+.teams-workspace {
+  display: grid;
+  grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--paper);
+  border: 0.0625rem solid var(--line);
+  border-radius: 0.625rem;
+}
+
+.teams-sidebar,
+.team-editor {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.teams-sidebar {
+  background: #efebdf;
+  border-right: 0.0625rem solid var(--line);
+}
+
+.create-team-form,
+.team-rename-form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.create-team-form label,
+.team-rename-form label {
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.create-team-form > div,
+.team-rename-form > div {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.create-team-form input,
+.team-rename-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.625rem 0.75rem;
+  color: var(--ink);
+  background: #fff;
+  border: 0.0625rem solid #aaa495;
+  border-radius: 0.375rem;
+}
+
+.team-list {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.team-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.625rem 0.75rem;
+  color: var(--ink);
+  background: transparent;
+  border: 0.0625rem solid transparent;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.team-list button[aria-current='true'] {
+  background: var(--paper);
+  border-color: var(--line);
+}
+
+.team-list small,
+.team-editor-heading > span {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.team-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.team-editor-heading h3 {
+  margin: 0.25rem 0 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.75rem;
+}
+
+.team-empty,
+.team-load-error,
+.team-editor-placeholder p,
+.delete-confirmation p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.team-load-error {
+  color: #7d2e24;
+}
+
+.team-members {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team-members > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 3rem;
+  padding: 0.5rem 0.75rem;
+  background: #f4f1e8;
+  border: 0.0625rem solid var(--line);
+  border-radius: 0.375rem;
+  font-weight: 750;
+}
+
+.team-member-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.team-member-actions button {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.5rem;
+  color: var(--moss-dark);
+  background: var(--paper);
+  border: 0.0625rem solid var(--line);
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.team-delete-area {
+  padding-top: 0.5rem;
+  border-top: 0.0625rem solid var(--line);
+}
+
+.text-button-danger {
+  color: #8a2f27;
+}
+
+.delete-confirmation {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.delete-confirmation p {
+  flex-basis: 100%;
+}
+
+.button-danger {
+  color: #fff;
+  background: #8a2f27;
+}
+
+.team-card-button {
+  min-height: 2.25rem;
+  padding: 0.375rem 0.5rem;
+  color: var(--moss-dark);
+  background: #e6eddf;
+  border: 0.0625rem solid #bdcbb5;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
 .action-feedback p {
   margin: 0;
   color: var(--moss-dark);
@@ -329,6 +661,31 @@ input {
   display: grid;
   gap: 0.75rem;
   padding: 0.875rem;
+}
+
+.favorite-button {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.5rem;
+  color: var(--moss-dark);
+  background: transparent;
+  border: 0;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.favorite-button span {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.favorite-button:hover:not(:disabled) {
+  background: #eee9dd;
 }
 
 .avatar-name {
@@ -421,7 +778,8 @@ input {
 }
 
 @media (max-width: 38rem) {
-  .site-header > p {
+  .site-header > p,
+  .account-summary > span:first-child {
     display: none;
   }
 
@@ -450,6 +808,22 @@ input {
 
   .card-actions .button-primary {
     grid-column: auto;
+  }
+
+  .teams-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .teams-sidebar {
+    border-right: 0;
+    border-bottom: 0.0625rem solid var(--line);
+  }
+
+  .create-team-form > div,
+  .team-rename-form > div,
+  .team-members > li {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 
