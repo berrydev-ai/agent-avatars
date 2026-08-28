@@ -150,6 +150,60 @@ access, spend ceilings, host allowlists.
 Cost is a non-factor (<$50 premium path). The real cost is the approval
 machinery and provider-terms review; model/product churn is the recurring tax.
 
+## Option 6 — Ingest pre-generated datasets (Hugging Face and beyond)
+
+Skip generation entirely: curate existing image collections into the catalog
+through an ingestion adapter. HF's mechanics fit the ADRs well — every dataset
+repo is a git repo, so the adapter pins a revision SHA, downloads via immutable
+`resolve/<sha>/<path>` URLs, and records per-asset origin (dataset id, revision,
+row/path, original source URL). The deterministic-avatar world (DiceBear,
+RoboHash, identicons) has no HF presence at all; what HF offers is finished
+art, not generators.
+
+- **Usable candidates (verified upstream grants)**
+  - **Google Cartoon Set** (`cgarciae/cartoonset` mirror, or Google's GCS
+    files) — **CC-BY 4.0 licensed by Google LLC**, 10k/100k distinct 2D
+    cartoon avatar faces with per-image attribute metadata (hair, color,
+    proportions → maps straight onto the tag taxonomy). Best single
+    candidate; one machine-recordable attribution line.
+  - **Fluent UI Emoji** (Microsoft, MIT; HF mirror
+    `Norod78/microsoft-fluentui-emoji-512-whitebg`, or the source repo for
+    SVG-native) — 7.5k assets including a robot emoji, three styles.
+  - **Noto Emoji** (Apache-2.0 image resources; HF mirror
+    `darknoon/noto-emoji-vector-512-svg` with inline SVG).
+  - **`nyuuzyou/svgrepo` cc0 + pd splits** — ~53k SVGs with per-row license,
+    owner, and source URL; needs pack-level license spot-audits.
+  - Off-HF but same pattern: **Kenney** packs (CC0) and the maintained
+    **Twemoji fork** (jdecked, graphics CC-BY 4.0, active as of Jun 2026).
+    `jainr3/diffusiondb-pixelart` (CC0 via DiffusionDB's Discord dedication
+    regime) only with heavy NSFW/IP curation.
+- **Risks**
+  - **The license tag is an unverified uploader claim, and ≥90% of the ~60
+    avatar-relevant datasets surveyed fail the rights bar.** Verified
+    failures: `huggan/anime-faces` tagged CC0 while its own card admits
+    scraping a commercial game-art site; FFHQ re-uploads tagged MIT when
+    NVIDIA's actual terms are CC-BY-NC-SA with per-image Flickr NC licenses;
+    CelebA re-uploads that violate CelebA's own no-redistribution terms;
+    permissive tags on Pokémon/Roblox/TV-screencap sets. Rule: the rights
+    record cites the verified upstream grant (Google, Microsoft, Noto,
+    SVGRepo pack), never the HF tag.
+  - Real-face datasets (FFHQ/CelebA/LAION-Face class) are excluded three
+    ways: likeness/consent, NC or no-redistribution terms, and LAION being a
+    URL index that licenses nothing.
+  - AI-generated packs carry incoherent license theories ("Apache inherited
+    from the model"); honest ingestion treats them as uploader dedication +
+    US uncopyrightability, with curation that drops person/character/brand
+    prompts and mandatory NSFW scanning.
+  - OpenMoji is CC-BY-**SA** — share-alike contaminates the catalog's
+    normalized derivatives; exclude or segregate.
+  - HF repos mutate and vanish (multiple 404s hit during this research);
+    pinned-SHA ingestion insulates builds, but the ledger should record
+    fetch date and DMCA exposure.
+- **Synergy**: Cartoon Set and Twemoji need the same per-asset attribution
+  machinery as DiceBear's CC-BY style tier — building it once unlocks both
+  options. Effort per dataset adapter: days (MIT/Apache emoji) to ~a week
+  (Cartoon Set with attribution + curation). Cash: $0.
+
 ## Ruled out — hosted procedural avatar APIs (documented dead end)
 
 Every non-AI hosted avatar service fails at least one hard requirement.
@@ -173,6 +227,7 @@ Adorable Avatars, the category's poster child, evaporated ~2019.
 | 3 | OSS library adapters | Days each | $0 | MIT/CC0/CC-BY per lib | Variety; RoboHash robots |
 | 4 | Local AI (Apache models) | 1–2 wks + review | ~$25 | "No copyright claimed" + model license | Unlimited original collections |
 | 5 | Hosted AI (Recraft first) | ADR + adapter | <$50/set | Provider-terms dependent | Native SVG, style_id consistency |
+| 6 | Dataset ingestion (HF etc.) | Days–1 wk each | $0 | Verified upstream grants only | 100k Cartoon Set faces; emoji sets |
 
 ## Recommended sequence
 
@@ -180,12 +235,15 @@ Adorable Avatars, the category's poster child, evaporated ~2019.
    question for Pixelbot/Voxel Bot).
 2. **Start Option 2's art track in parallel** — it reuses the DiceBear engine,
    and it is the only option that yields an identity the project owns.
-3. **Add Option 3 selectively** (boring-avatars first) when catalog variety,
+3. **Ingest the clean datasets (Option 6)** — Fluent UI Emoji (MIT) and Noto
+   Emoji (Apache-2.0) first; Cartoon Set and Twemoji once the CC-BY
+   attribution machinery exists (shared with DiceBear's CC-BY tier).
+4. **Add Option 3 selectively** (boring-avatars first) when catalog variety,
    not volume, is the gap.
-4. **Prototype Option 4 offline** (FLUX.2 klein or Z-Image-Turbo + own-art
+5. **Prototype Option 4 offline** (FLUX.2 klein or Z-Image-Turbo + own-art
    LoRA) without publishing, so the safety/rights review has concrete samples;
    revisit after the Andersen trial signal.
-5. **Take Option 5 only via a Recraft-specific ADR** if native-SVG AI output
+6. **Take Option 5 only via a Recraft-specific ADR** if native-SVG AI output
    proves worth the approval machinery; OpenAI as the raster/provenance
    alternative.
 
@@ -206,8 +264,17 @@ Adorable Avatars, the category's poster child, evaporated ~2019.
 - Google Gemini API pricing/terms: ai.google.dev/gemini-api/docs/pricing,
   cloud.google.com/terms/generative-ai-indemnified-services
 - Litigation trackers: meshiplaw.com (Andersen), courtlistener.com (Getty US)
+- Cartoon Set: google.github.io/cartoonset (CC-BY 4.0 statement) ·
+  huggingface.co/datasets/cgarciae/cartoonset
+- Emoji upstreams: github.com/microsoft/fluentui-emoji (MIT) ·
+  github.com/googlefonts/noto-emoji (Apache-2.0 images) ·
+  github.com/jdecked/twemoji (CC-BY 4.0 graphics)
+- HF policy: huggingface.co/docs/hub/repositories-licenses (self-declared
+  tags) · huggingface.co/content-policy · FFHQ terms:
+  github.com/NVlabs/ffhq-dataset · CelebA terms: mmlab.ie.cuhk.edu.hk
 
 Flagged as unverified: commission price range (triangulated, no direct quote);
 `@dicebear/styles` v10 export slugs for Pixelbot/Voxel Bot; Stability official
 API pricing and C2PA status; Recraft V4.1 exact API model string; bottts
-redistribution terms (one-line license, silent either way).
+redistribution terms (one-line license, silent either way); SVGRepo per-pack
+license-label accuracy (asserted by aggregator, spot-audit before ingesting).
