@@ -3,4 +3,5 @@ node_modules/
 public/avatars/*.svg
 public/avatars/manifest.json
 generated/avatar-recipes.json
+src/lib/supabase/database.types.ts
 *.md

@@ -16,9 +16,26 @@ Implementation starts from these approved documents:
 - [`docs/contracts/mvp-contracts.md`](docs/contracts/mvp-contracts.md) — avatar, data, client, environment, and licensing contracts
 - [`docs/acceptance-test-matrix.md`](docs/acceptance-test-matrix.md) — executable release requirements
 
-The application scaffold and executable commands are delivered in Stage 2.
-Until then, documentation integrity is checked with:
+Stage 2 modules share the repository-root tooling. Documentation integrity can
+always be checked with:
 
 ```sh
 git diff --check
 ```
+
+## Identity data development
+
+The Supabase identity foundation is under `supabase/`; its browser-safe typed
+entry point is `src/lib/supabase/index.ts`. Local database verification requires
+Docker and the pinned Node/npm versions:
+
+```sh
+npm ci --ignore-scripts
+npx supabase start
+npm run test:db
+npm run check:database-types
+```
+
+Copy `.env.example` to an ignored local environment file and replace only the
+local public publishable key. Never place a service-role key or database secret
+in a `VITE_*` variable.

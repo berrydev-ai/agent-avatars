@@ -11,6 +11,7 @@
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
@@ -22,7 +23,16 @@
       "node"
     ],
     "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "scripts", "tests", "vite.config.ts", "eslint.config.js"]
+  "include": [
+    "src",
+    "scripts",
+    "tests",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "eslint.config.js"
+  ]
 }
