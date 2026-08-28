@@ -4,6 +4,7 @@ import {
   type AvatarManifest,
 } from '../lib/contracts/avatar';
 import { CatalogPage } from '../features/catalog/CatalogPage';
+import { CollectionsProvider } from '../features/collections/CollectionsProvider';
 import { IdentityProvider } from '../features/identity/IdentityProvider';
 import { createIdentityClients, type IdentityClients } from '../lib/supabase';
 
@@ -48,10 +49,12 @@ export function App() {
       typeof rawConfiguredOrigin === 'string' ? rawConfiguredOrigin : '';
     return (
       <IdentityProvider clients={identityClients}>
-        <CatalogPage
-          manifest={catalog.manifest}
-          publicSiteOrigin={configuredOrigin || window.location.origin}
-        />
+        <CollectionsProvider>
+          <CatalogPage
+            manifest={catalog.manifest}
+            publicSiteOrigin={configuredOrigin || window.location.origin}
+          />
+        </CollectionsProvider>
       </IdentityProvider>
     );
   }

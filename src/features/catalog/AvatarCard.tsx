@@ -4,6 +4,10 @@ interface AvatarCardProps {
   avatar: AvatarRecord;
   tagDefinitions: ReadonlyMap<string, TagDefinition>;
   busyAction: string | undefined;
+  isFavorite?: boolean | undefined;
+  favoriteBusy?: boolean | undefined;
+  onToggleFavorite?:
+    ((avatar: AvatarRecord, label: string) => void) | undefined;
   onDownload: (avatar: AvatarRecord) => void;
   onOpen: (avatar: AvatarRecord) => void;
   onCopy: (avatar: AvatarRecord) => void;
@@ -13,6 +17,9 @@ export function AvatarCard({
   avatar,
   tagDefinitions,
   busyAction,
+  isFavorite,
+  favoriteBusy,
+  onToggleFavorite,
   onDownload,
   onOpen,
   onCopy,
@@ -21,6 +28,7 @@ export function AvatarCard({
     .map((tag) => tagDefinitions.get(tag)?.label)
     .filter((label): label is string => Boolean(label))
     .slice(0, 3);
+  const name = readablePreset(avatar.preset);
 
   return (
     <li className="avatar-card">
@@ -35,7 +43,24 @@ export function AvatarCard({
         />
       </div>
       <div className="card-body">
-        <p className="avatar-name">{readablePreset(avatar.preset)}</p>
+        {onToggleFavorite ? (
+          <button
+            className="favorite-button"
+            type="button"
+            aria-pressed={isFavorite}
+            aria-label={
+              isFavorite
+                ? `Remove ${name} from favorites`
+                : `Save ${name} to favorites`
+            }
+            disabled={favoriteBusy}
+            onClick={() => onToggleFavorite(avatar, name)}
+          >
+            <span aria-hidden="true">{isFavorite ? '♥' : '♡'}</span>
+            {isFavorite ? 'Saved' : 'Save'}
+          </button>
+        ) : null}
+        <p className="avatar-name">{name}</p>
         <ul className="card-tags" aria-label="Visible traits">
           {labels.map((label) => (
             <li key={label}>{label}</li>
