@@ -32,6 +32,12 @@ export interface AuthGateway {
 }
 
 const authUserSchema = z.object({ id: z.string().min(1), email: z.email() });
+const deadSessionCodes = new Set([
+  'session_not_found',
+  'refresh_token_not_found',
+  'refresh_token_already_used',
+  'session_expired',
+]);
 
 export function createAuthClient(
   gateway: AuthGateway,
@@ -41,7 +47,16 @@ export function createAuthClient(
     async getInitialState(): Promise<AuthState> {
       try {
         const result = await gateway.getSession();
-        if (result.error !== null) throw mapProviderError(result.error);
+        if (result.error !== null) {
+          if (!isDeadSessionError(result.error)) {
+            throw mapProviderError(result.error);
+          }
+          const cleanup = await gateway.signOut();
+          if (cleanup.error !== null && !isDeadSessionError(cleanup.error)) {
+            throw mapProviderError(cleanup.error);
+          }
+          return { status: 'anonymous' };
+        }
         if (result.data.session === null) return { status: 'anonymous' };
         return {
           status: 'authenticated',
@@ -96,6 +111,12 @@ export function createAuthClient(
       if (result.error !== null) throw mapProviderError(result.error);
     },
   };
+}
+
+function isDeadSessionError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const code = (error as { code?: unknown }).code;
+  return typeof code === 'string' && deadSessionCodes.has(code);
 }
 
 function authenticatedResult(result: GatewayResult<{ user: unknown } | null>): {

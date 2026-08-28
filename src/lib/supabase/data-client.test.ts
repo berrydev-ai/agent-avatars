@@ -104,6 +104,41 @@ describe('team client', () => {
     expect(gateway.listTeams).toHaveBeenCalledWith({ after: null, limit: 2 });
   });
 
+  it('loads every member when a page crosses the PostgREST row cap', async () => {
+    const teams = Array.from({ length: 11 }, (_, index) => ({
+      ...teamOne,
+      id: `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+      name: `Team ${String(index + 1)}`,
+    }));
+    const allMembers = teams.flatMap((team) =>
+      Array.from({ length: 100 }, (_, position) => ({
+        team_id: team.id,
+        avatar_id: `test-${position.toString(16).padStart(20, '0')}`,
+        position,
+        avatars: { publication_status: 'active' as const },
+      })),
+    );
+    const listMembers = vi.fn((teamIds: readonly string[]) =>
+      result(
+        allMembers
+          .filter((member) => teamIds.includes(member.team_id))
+          .slice(0, 1_000),
+      ),
+    );
+    const gateway = createGateway({
+      listTeams: vi.fn().mockReturnValue(result(teams)),
+      listMembers,
+    });
+
+    const page = await createTeamClient(gateway).listTeams({ limit: 11 });
+
+    expect(page.items).toHaveLength(11);
+    expect(
+      page.items.reduce((count, team) => count + team.avatars.length, 0),
+    ).toBe(1_100);
+    expect(listMembers).toHaveBeenCalledTimes(2);
+  });
+
   it('validates and normalizes creates while preserving the caller intent ID', async () => {
     const gateway = createGateway({
       createTeam: vi.fn().mockReturnValue(result(teamOne)),

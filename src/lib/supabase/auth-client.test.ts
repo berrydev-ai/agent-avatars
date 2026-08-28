@@ -50,6 +50,42 @@ describe('auth client', () => {
     });
   });
 
+  it.each([
+    'session_not_found',
+    'refresh_token_not_found',
+    'refresh_token_already_used',
+    'session_expired',
+  ])('clears a stale %s session and starts anonymously', async (code) => {
+    const gateway = createGateway({
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: null },
+        error: { code, status: 400 },
+      }),
+    });
+
+    await expect(createAuthClient(gateway).getInitialState()).resolves.toEqual({
+      status: 'anonymous',
+    });
+    expect(gateway.signOut).toHaveBeenCalledOnce();
+  });
+
+  it('keeps provider startup failures visible', async () => {
+    const gateway = createGateway({
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: null },
+        error: new TypeError('provider unavailable'),
+      }),
+    });
+
+    await expect(
+      createAuthClient(gateway).getInitialState(),
+    ).resolves.toMatchObject({
+      status: 'error',
+      error: { code: 'NETWORK_ERROR', retryable: true },
+    });
+    expect(gateway.signOut).not.toHaveBeenCalled();
+  });
+
   it('passes normalized signup input and the approved redirect', async () => {
     const gateway = createGateway();
     const client = createAuthClient(gateway, 'https://agent-avatars.dev');

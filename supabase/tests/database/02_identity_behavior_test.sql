@@ -238,6 +238,8 @@ select throws_ok(
 
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-00000000000b', true);
 set local role authenticated;
+select is((select count(*) from public.profiles), 1::bigint, 'user B reads only their own profile');
+select is((select count(*) from public.avatars), 2::bigint, 'user B retains public catalog access');
 select is((select count(*) from public.favorites), 0::bigint, 'user B cannot read user A favorites');
 select is((select count(*) from public.agent_teams), 0::bigint, 'user B cannot read user A teams');
 select is((select count(*) from public.agent_team_avatars), 0::bigint, 'user B cannot read user A membership');
@@ -254,6 +256,12 @@ select throws_ok(
   'cross-owner rename is indistinguishable from a missing team'
 );
 select throws_ok(
+  $$select public.rename_agent_team('90000000-0000-4000-8000-000000000001', 'Missing')$$,
+  'P0001',
+  'NOT_FOUND',
+  'missing and cross-owner rename return the same error'
+);
+select throws_ok(
   $$select public.create_agent_team('10000000-0000-4000-8000-000000000001', 'Collision')$$,
   'P0001',
   'CONFLICT',
@@ -268,9 +276,22 @@ select throws_ok(
   'NOT_FOUND',
   'cross-owner membership is indistinguishable from a missing team'
 );
+select throws_ok(
+  $$select * from public.set_agent_team_members(
+    '90000000-0000-4000-8000-000000000001',
+    array['test-bbbbbbbbbbbbbbbbbbbb']
+  )$$,
+  'P0001',
+  'NOT_FOUND',
+  'missing and cross-owner membership return the same error'
+);
 select ok(
   public.delete_agent_team('10000000-0000-4000-8000-000000000001'),
   'cross-owner delete has the same idempotent result as missing'
+);
+select ok(
+  public.delete_agent_team('90000000-0000-4000-8000-000000000001'),
+  'missing and cross-owner delete return the same result'
 );
 reset role;
 
@@ -311,6 +332,33 @@ select ok(
   and not has_table_privilege('authenticated', 'public.agent_teams', 'update')
   and not has_table_privilege('authenticated', 'public.agent_team_avatars', 'delete'),
   'authenticated users have no direct private-table write grants'
+);
+select ok(
+  not exists (
+    select 1
+    from (
+      values
+        ('anon', 'profiles', false),
+        ('anon', 'avatars', true),
+        ('anon', 'favorites', false),
+        ('anon', 'agent_teams', false),
+        ('anon', 'agent_team_avatars', false),
+        ('authenticated', 'profiles', true),
+        ('authenticated', 'avatars', true),
+        ('authenticated', 'favorites', true),
+        ('authenticated', 'agent_teams', true),
+        ('authenticated', 'agent_team_avatars', true)
+    ) as expected(role_name, table_name, can_select)
+    cross join (
+      values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')
+    ) as operation(privilege_name)
+    where pg_catalog.has_table_privilege(
+      expected.role_name,
+      pg_catalog.format('public.%I', expected.table_name),
+      operation.privilege_name
+    ) <> (operation.privilege_name = 'SELECT' and expected.can_select)
+  ),
+  'anon and authenticated table grants match the complete read-only matrix'
 );
 select is(
   (
@@ -364,6 +412,110 @@ select is(
   ),
   5::bigint,
   'all private mutation RPCs use the constrained definer role'
+);
+select ok(
+  not exists (
+    select 1
+    from (
+      values
+        ('profiles', 'profiles_select_own', 'SELECT', array['authenticated']::name[]),
+        ('profiles', 'profiles_writer_select_own', 'SELECT', array['app_private_writer']::name[]),
+        ('avatars', 'avatars_select_public', 'SELECT', array['anon', 'authenticated']::name[]),
+        ('avatars', 'avatars_writer_select', 'SELECT', array['app_private_writer']::name[]),
+        ('favorites', 'favorites_select_own', 'SELECT', array['authenticated']::name[]),
+        ('favorites', 'favorites_writer_select_own', 'SELECT', array['app_private_writer']::name[]),
+        ('favorites', 'favorites_writer_insert_own', 'INSERT', array['app_private_writer']::name[]),
+        ('favorites', 'favorites_writer_delete_own', 'DELETE', array['app_private_writer']::name[]),
+        ('agent_teams', 'agent_teams_select_own', 'SELECT', array['authenticated']::name[]),
+        ('agent_teams', 'agent_teams_writer_select_own', 'SELECT', array['app_private_writer']::name[]),
+        ('agent_teams', 'agent_teams_writer_insert_own', 'INSERT', array['app_private_writer']::name[]),
+        ('agent_teams', 'agent_teams_writer_update_own', 'UPDATE', array['app_private_writer']::name[]),
+        ('agent_teams', 'agent_teams_writer_delete_own', 'DELETE', array['app_private_writer']::name[]),
+        ('agent_team_avatars', 'agent_team_avatars_select_own', 'SELECT', array['authenticated']::name[]),
+        ('agent_team_avatars', 'agent_team_avatars_writer_select_own', 'SELECT', array['app_private_writer']::name[]),
+        ('agent_team_avatars', 'agent_team_avatars_writer_insert_own', 'INSERT', array['app_private_writer']::name[]),
+        ('agent_team_avatars', 'agent_team_avatars_writer_delete_own', 'DELETE', array['app_private_writer']::name[])
+    ) as expected(table_name, policy_name, command_name, role_names)
+    full join (
+      select *
+      from pg_catalog.pg_policies
+      where schemaname = 'public'
+        and tablename in ('profiles', 'avatars', 'favorites', 'agent_teams', 'agent_team_avatars')
+    ) actual
+      on actual.tablename = expected.table_name
+      and actual.policyname = expected.policy_name
+      and actual.cmd = expected.command_name
+      and actual.roles = expected.role_names
+    where expected.policy_name is null or actual.policyname is null
+  ),
+  'the exposed tables have exactly the reviewed policy commands and roles'
+);
+select is(
+  (
+    select count(*)
+    from pg_catalog.pg_class
+    join pg_catalog.pg_namespace on pg_namespace.oid = pg_class.relnamespace
+    where pg_namespace.nspname = 'public'
+      and pg_class.relname in ('profiles', 'avatars', 'favorites', 'agent_teams', 'agent_team_avatars')
+      and pg_catalog.pg_get_userbyid(pg_class.relowner) = 'postgres'
+  ),
+  5::bigint,
+  'all exposed tables remain owned by the non-writer migration role'
+);
+select is(
+  (
+    select count(*)
+    from pg_catalog.pg_proc
+    join pg_catalog.pg_namespace on pg_namespace.oid = pg_proc.pronamespace
+    where pg_namespace.nspname = 'private'
+      and pg_proc.proname in (
+        'is_sorted_unique_text_array',
+        'set_updated_at',
+        'current_user_id',
+        'create_profile_for_auth_user'
+      )
+      and pg_catalog.pg_get_userbyid(pg_proc.proowner) = 'postgres'
+      and pg_proc.proconfig = array['search_path=""']
+  ),
+  4::bigint,
+  'all private helpers retain the non-writer owner and empty search path'
+);
+select ok(
+  (
+    select pg_catalog.pg_get_userbyid(proowner) = 'postgres'
+      and prosecdef
+      and proconfig = array['search_path=""']
+    from pg_catalog.pg_proc
+    where oid = 'public.sync_avatar_catalog(jsonb, jsonb)'::regprocedure
+  ),
+  'catalog synchronization retains its non-writer definer and empty search path'
+);
+select ok(
+  not exists (
+    select 1
+    from (
+      values
+        ('public.set_favorite(text, boolean)'::regprocedure, true, false),
+        ('public.create_agent_team(uuid, text)'::regprocedure, true, false),
+        ('public.rename_agent_team(uuid, text)'::regprocedure, true, false),
+        ('public.delete_agent_team(uuid)'::regprocedure, true, false),
+        ('public.set_agent_team_members(uuid, text[])'::regprocedure, true, false),
+        ('public.sync_avatar_catalog(jsonb, jsonb)'::regprocedure, false, true)
+    ) as expected(function_oid, authenticated_execute, service_execute)
+    where pg_catalog.has_function_privilege('anon', expected.function_oid, 'EXECUTE')
+      or pg_catalog.has_function_privilege('public', expected.function_oid, 'EXECUTE')
+      or pg_catalog.has_function_privilege(
+        'authenticated',
+        expected.function_oid,
+        'EXECUTE'
+      ) <> expected.authenticated_execute
+      or pg_catalog.has_function_privilege(
+        'service_role',
+        expected.function_oid,
+        'EXECUTE'
+      ) <> expected.service_execute
+  ),
+  'all exposed functions have exact anon, authenticated, public, and service grants'
 );
 
 delete from auth.users where id = '00000000-0000-4000-8000-00000000000a';
