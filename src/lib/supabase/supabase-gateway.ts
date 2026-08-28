@@ -91,6 +91,7 @@ export function createSupabaseDataGateway(
           'team_id, avatar_id, position, avatars!inner(publication_status)',
         )
         .in('team_id', [...teamIds])
+        .order('team_id', { ascending: true })
         .order('position', { ascending: true });
     },
 

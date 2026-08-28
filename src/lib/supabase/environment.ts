@@ -24,14 +24,40 @@ export function parseIdentityEnvironment(
       input.VITE_SUPABASE_URL,
       appEnv === 'local',
     );
-    const supabasePublishableKey = z
-      .string()
-      .trim()
-      .min(1)
-      .parse(input.VITE_SUPABASE_PUBLISHABLE_KEY);
+    const supabasePublishableKey = parseSupabaseBrowserKey(
+      input.VITE_SUPABASE_PUBLISHABLE_KEY,
+    );
     return { appEnv, publicSiteUrl, supabaseUrl, supabasePublishableKey };
   } catch (error) {
     throw validationError(error);
+  }
+}
+
+function parseSupabaseBrowserKey(input: string | undefined): string {
+  const value = z.string().trim().min(1).parse(input);
+  const isPublishableKey = /^sb_publishable_[A-Za-z0-9_-]+$/.test(value);
+  const isLegacyAnonKey = decodeJwtRole(value) === 'anon';
+  if (!isPublishableKey && !isLegacyAnonKey) {
+    throw new Error('publishable or legacy anon key required');
+  }
+  return value;
+}
+
+function decodeJwtRole(value: string): string | undefined {
+  const segments = value.split('.');
+  if (segments.length !== 3) return undefined;
+  const payloadSegment = segments[1];
+  if (payloadSegment === undefined) return undefined;
+  try {
+    const base64 = payloadSegment.replaceAll('-', '+').replaceAll('_', '/');
+    const payload = JSON.parse(
+      atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')),
+    ) as unknown;
+    if (typeof payload !== 'object' || payload === null) return undefined;
+    const role = (payload as { role?: unknown }).role;
+    return typeof role === 'string' ? role : undefined;
+  } catch {
+    return undefined;
   }
 }
 

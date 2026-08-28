@@ -73,6 +73,7 @@ const storedMembersSchema = z.array(
     position: z.number().int().min(0).max(99),
   }),
 );
+const MEMBER_TEAM_CHUNK_SIZE = 10;
 
 export function createFavoriteClient(
   gateway: IdentityDataGateway,
@@ -179,10 +180,21 @@ async function loadMembers(
   teamIds: readonly string[],
 ): Promise<Map<string, SavedAvatarRef[]>> {
   if (teamIds.length === 0) return new Map();
-  const rows = parseProviderData(
-    memberRowsSchema,
-    await gateway.listMembers(teamIds),
+  const chunks = Array.from(
+    { length: Math.ceil(teamIds.length / MEMBER_TEAM_CHUNK_SIZE) },
+    (_, index) =>
+      teamIds.slice(
+        index * MEMBER_TEAM_CHUNK_SIZE,
+        (index + 1) * MEMBER_TEAM_CHUNK_SIZE,
+      ),
   );
+  const rows = (
+    await Promise.all(
+      chunks.map(async (chunk) =>
+        parseProviderData(memberRowsSchema, await gateway.listMembers(chunk)),
+      ),
+    )
+  ).flat();
   const members = new Map<string, SavedAvatarRef[]>();
   for (const row of [...rows].sort(
     (left, right) => left.position - right.position,
