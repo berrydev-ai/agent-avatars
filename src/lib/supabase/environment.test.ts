@@ -4,6 +4,25 @@ import { describe, expect, it } from 'vitest';
 
 import { parseIdentityEnvironment } from './environment';
 
+function jwtForRole(role: unknown): string {
+  const header = Buffer.from(
+    JSON.stringify({ alg: 'HS256', typ: 'JWT' }),
+  ).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ role })).toString('base64url');
+  const signature = Buffer.from('test-signature').toString('base64url');
+  return `${header}.${payload}.${signature}`;
+}
+
+function jwtPayloadForRole(role: unknown): string {
+  return jwtForRole(role).split('.')[1] ?? '';
+}
+
+const productionEnvironment = {
+  VITE_APP_ENV: 'production',
+  VITE_PUBLIC_SITE_URL: 'https://agent-avatars.dev',
+  VITE_SUPABASE_URL: 'https://project.supabase.co',
+};
+
 describe('identity environment', () => {
   it('accepts public local values without treating them as secrets', () => {
     expect(
@@ -49,44 +68,41 @@ describe('identity environment', () => {
     ).toThrow();
   });
 
-  it('accepts only publishable or legacy anon browser keys', () => {
-    const jwtForRole = (role: string) => {
-      const payload = Buffer.from(JSON.stringify({ role })).toString(
-        'base64url',
-      );
-      return `header.${payload}.signature`;
-    };
-    const input = {
-      VITE_APP_ENV: 'production',
-      VITE_PUBLIC_SITE_URL: 'https://agent-avatars.dev',
-      VITE_SUPABASE_URL: 'https://project.supabase.co',
-    };
-
-    expect(() =>
-      parseIdentityEnvironment({
-        ...input,
-        VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
-      }),
-    ).not.toThrow();
-    expect(() =>
-      parseIdentityEnvironment({
-        ...input,
-        VITE_SUPABASE_PUBLISHABLE_KEY: jwtForRole('anon'),
-      }),
-    ).not.toThrow();
-
-    for (const rejectedKey of [
-      'sb_secret_should-never-enter-a-browser',
-      jwtForRole('service_role'),
-      jwtForRole('authenticated'),
-      'arbitrary-value',
-    ]) {
+  it.each(['sb_publishable_test', jwtForRole('anon')])(
+    'accepts supported browser credential %s',
+    (acceptedKey) => {
       expect(() =>
         parseIdentityEnvironment({
-          ...input,
-          VITE_SUPABASE_PUBLISHABLE_KEY: rejectedKey,
+          ...productionEnvironment,
+          VITE_SUPABASE_PUBLISHABLE_KEY: acceptedKey,
         }),
-      ).toThrow();
-    }
+      ).not.toThrow();
+    },
+  );
+
+  it.each([
+    ['missing', undefined],
+    ['secret key', 'sb_secret_should-never-enter-a-browser'],
+    ['service-role JWT', jwtForRole('service_role')],
+    ['authenticated JWT', jwtForRole('authenticated')],
+    ['non-string anon role JWT', jwtForRole(['anon'])],
+    ['arbitrary value', 'arbitrary-value'],
+    [
+      'missing JWT signature',
+      `${jwtForRole('anon').split('.').slice(0, 2).join('.')}.`,
+    ],
+    [
+      'invalid JWT header',
+      `not+base64url.${jwtPayloadForRole('anon')}.signature`,
+    ],
+    ['invalid JWT payload', 'header.!!!!.signature'],
+    ['extra JWT segment', `${jwtForRole('anon')}.extra`],
+  ])('rejects %s', (_credentialClass, rejectedKey) => {
+    expect(() =>
+      parseIdentityEnvironment({
+        ...productionEnvironment,
+        VITE_SUPABASE_PUBLISHABLE_KEY: rejectedKey,
+      }),
+    ).toThrow();
   });
 });
