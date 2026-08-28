@@ -54,19 +54,30 @@ describe('avatar actions', () => {
   });
 
   it('opens a new isolated browsing context and reports blocked popups', () => {
-    const open = vi.fn().mockReturnValue({ opener: window });
+    const replace = vi.fn();
+    const opened = { opener: window, location: { replace } };
+    const open = vi.fn().mockReturnValue(opened);
     expect(openAvatar(record, 'https://agent-avatars.dev', open)).toEqual({
       status: 'opened',
     });
-    expect(open).toHaveBeenCalledWith(
+    expect(open).toHaveBeenCalledWith('', '_blank');
+    expect(opened.opener).toBeNull();
+    expect(replace).toHaveBeenCalledWith(
       'https://agent-avatars.dev/avatars/dicebear-aaaaaaaaaaaaaaaaaaaa.svg',
-      '_blank',
-      'noopener,noreferrer',
     );
 
     expect(openAvatar(record, 'https://agent-avatars.dev', () => null)).toEqual(
       { status: 'blocked' },
     );
+  });
+
+  it('rejects an unsafe public origin before opening a window', () => {
+    const open = vi.fn();
+
+    expect(() => openAvatar(record, 'javascript:alert(1)', open)).toThrow(
+      'The public site origin must use HTTPS.',
+    );
+    expect(open).not.toHaveBeenCalled();
   });
 
   it('refuses a download whose bytes do not match the manifest hash', async () => {
