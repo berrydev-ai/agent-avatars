@@ -22,7 +22,7 @@ type OpenWindow = (
   url?: string | URL,
   target?: string,
   features?: string,
-) => { opener: unknown } | null;
+) => { opener: unknown; location: { replace(url: string): void } } | null;
 
 export function canonicalAssetUrl(
   record: AvatarRecord,
@@ -63,13 +63,11 @@ export function openAvatar(
   publicSiteOrigin: string,
   openWindow: OpenWindow,
 ): OpenResult {
-  const opened = openWindow(
-    canonicalAssetUrl(record, publicSiteOrigin),
-    '_blank',
-    'noopener,noreferrer',
-  );
+  const assetUrl = canonicalAssetUrl(record, publicSiteOrigin);
+  const opened = openWindow('', '_blank');
   if (!opened) return { status: 'blocked' };
   opened.opener = null;
+  opened.location.replace(assetUrl);
   return { status: 'opened' };
 }
 

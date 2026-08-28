@@ -68,8 +68,7 @@ test('download, open, and copy actions use the canonical verified asset', async 
   const popupPromise = page.waitForEvent('popup');
   await page.getByRole('button', { name: 'Open' }).click();
   const popup = await popupPromise;
-  await popup.waitForLoadState('domcontentloaded');
-  expect(new URL(popup.url()).pathname).toBe(avatarPath);
+  await expect.poll(() => new URL(popup.url()).pathname).toBe(avatarPath);
   await expect
     .poll(() => popup.evaluate((): boolean => window.opener === null))
     .toBe(true);
