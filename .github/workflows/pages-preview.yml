@@ -13,7 +13,10 @@ concurrency:
 jobs:
   deploy-preview:
     name: Build and deploy immutable preview
-    if: github.ref_name != 'main' && github.ref_name != 'master'
+    if: >-
+      github.ref_name != 'main' &&
+      github.ref_name != 'master' &&
+      github.ref_name != 'production'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:

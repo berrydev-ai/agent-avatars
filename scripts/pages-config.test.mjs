@@ -132,12 +132,15 @@ test('build wrapper creates and validates deployable Pages output', async (conte
       "await writeFile('dist/avatars/manifest.json', '[]');\n",
   );
 
+  const previewEnvironment = { ...process.env, ...validEnvironment };
+  delete previewEnvironment.VITE_PUBLIC_SITE_URL;
+
   await execFileAsync(
     process.execPath,
     [path.resolve('scripts/pages-build.mjs')],
     {
       cwd: directory,
-      env: { ...process.env, ...validEnvironment },
+      env: previewEnvironment,
     },
   );
 
