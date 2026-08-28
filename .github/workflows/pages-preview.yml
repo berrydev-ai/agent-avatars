@@ -1,0 +1,114 @@
+name: Cloudflare Pages preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-preview-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-preview:
+    name: Build and deploy immutable preview
+    if: >-
+      github.ref_name != 'main' &&
+      github.ref_name != 'master' &&
+      github.ref_name != 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: cloudflare-preview
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    permissions:
+      contents: read
+      deployments: write
+    env:
+      CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+      VITE_APP_ENV: preview
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+    steps:
+      - name: Check out the selected commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install from lockfile
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Run unit and component tests
+        run: npm run test
+
+      - name: Start local database
+        run: npx supabase db start
+
+      - name: Run database tests
+        run: npm run test:db
+
+      - name: Test Pages delivery configuration
+        run: node --test scripts/pages-config.test.mjs
+
+      - name: Prepare immutable preview context
+        shell: bash
+        run: |
+          if [[ ! "$CLOUDFLARE_PAGES_PROJECT" =~ ^[a-z0-9][a-z0-9-]*[a-z0-9]$ ]]; then
+            echo "::error::CLOUDFLARE_PAGES_PROJECT must be a lowercase Pages project name."
+            exit 1
+          fi
+
+          preview_branch="preview-$GITHUB_SHA"
+          {
+            echo "CF_PAGES=1"
+            echo "CF_PAGES_BRANCH=$preview_branch"
+            echo "CF_PAGES_COMMIT_SHA=$GITHUB_SHA"
+            echo "CF_PAGES_URL=https://$preview_branch.$CLOUDFLARE_PAGES_PROJECT.pages.dev"
+          } >> "$GITHUB_ENV"
+
+      - name: Build and validate Pages assets
+        run: node scripts/pages-build.mjs
+
+      - name: Deploy preview
+        id: deploy
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          packageManager: npm
+          wranglerVersion: 4.127.0
+          command: >-
+            pages deploy dist
+            --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+            --branch=preview-${{ github.sha }}
+            --commit-hash=${{ github.sha }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Record immutable deployment evidence
+        env:
+          DEPLOYMENT_ALIAS_URL: ${{ steps.deploy.outputs.pages-deployment-alias-url }}
+          DEPLOYMENT_ID: ${{ steps.deploy.outputs.pages-deployment-id }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          {
+            echo "### Cloudflare Pages preview"
+            echo
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Deployment ID: \`$DEPLOYMENT_ID\`"
+            echo "- Immutable URL: $DEPLOYMENT_URL"
+            echo "- SHA alias: $DEPLOYMENT_ALIAS_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
