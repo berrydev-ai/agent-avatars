@@ -53,18 +53,27 @@ test('rejects production branches and non-Pages origins', () => {
   );
 });
 
-test('rejects a Supabase service-role key', () => {
-  const payload = Buffer.from(
-    JSON.stringify({ role: 'service_role' }),
-  ).toString('base64url');
+test('accepts only Supabase publishable or legacy anon keys', () => {
+  const jwtForRole = (role) => {
+    const payload = Buffer.from(JSON.stringify({ role })).toString('base64url');
+    return `header.${payload}.signature`;
+  };
+
+  assert.doesNotThrow(() => validatePublishableKey('sb_publishable_test'));
+  assert.doesNotThrow(() => validatePublishableKey(jwtForRole('anon')));
   assert.throws(
-    () => validatePublishableKey(`header.${payload}.signature`),
-    /service-role/,
+    () => validatePublishableKey(jwtForRole('service_role')),
+    /publishable or legacy anon/,
+  );
+  assert.throws(
+    () => validatePublishableKey(jwtForRole('authenticated')),
+    /publishable or legacy anon/,
   );
   assert.throws(
     () => validatePublishableKey('sb_secret_not_public'),
-    /service-role/,
+    /publishable or legacy anon/,
   );
+  assert.throws(() => validatePublishableKey('arbitrary-value'), /publishable/);
 });
 
 test('renders the required CSP and cache policy', () => {
