@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 import type {
   AgentTeam,
@@ -6,8 +6,8 @@ import type {
   Page,
   SavedAvatarRef,
   TeamClient,
-} from "../contracts/identity";
-import { mapProviderError, unexpectedResponse } from "./errors";
+} from '../contracts/identity';
+import { mapProviderError, unexpectedResponse } from './errors';
 import {
   decodeTeamCursor,
   encodeTeamCursor,
@@ -17,7 +17,7 @@ import {
   parseTeamName,
   parseUuid,
   type TeamCursor,
-} from "./validation";
+} from './validation';
 
 interface GatewayResult {
   data: unknown;
@@ -45,7 +45,7 @@ export interface IdentityDataGateway {
   getTeam(teamId: string): Promise<GatewayResult>;
 }
 
-const availabilitySchema = z.enum(["active", "withdrawn"]);
+const availabilitySchema = z.enum(['active', 'withdrawn']);
 const favoriteRowsSchema = z.array(
   z.object({
     avatar_id: z.string(),

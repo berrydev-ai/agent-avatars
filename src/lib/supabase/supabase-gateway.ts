@@ -1,8 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type { Database } from "./database.types";
-import type { AuthGateway, GatewayResult } from "./auth-client";
-import type { IdentityDataGateway } from "./data-client";
+import type { Database } from './database.types';
+import type { AuthGateway, GatewayResult } from './auth-client';
+import type { IdentityDataGateway } from './data-client';
 
 export function createSupabaseAuthGateway(
   client: SupabaseClient<Database>,
@@ -34,7 +34,7 @@ export function createSupabaseAuthGateway(
     async verifyEmail(tokenHash) {
       const { data, error } = await client.auth.verifyOtp({
         token_hash: tokenHash,
-        type: "email",
+        type: 'email',
       });
       return { data: data.user === null ? null : { user: data.user }, error };
     },
@@ -45,7 +45,7 @@ export function createSupabaseAuthGateway(
     },
 
     async signOut() {
-      return client.auth.signOut({ scope: "local" });
+      return client.auth.signOut({ scope: 'local' });
     },
   };
 }
@@ -56,14 +56,14 @@ export function createSupabaseDataGateway(
   return {
     async listFavorites() {
       return client
-        .from("favorites")
-        .select("avatar_id, avatars!inner(publication_status)")
-        .order("created_at", { ascending: false })
-        .order("avatar_id", { ascending: true });
+        .from('favorites')
+        .select('avatar_id, avatars!inner(publication_status)')
+        .order('created_at', { ascending: false })
+        .order('avatar_id', { ascending: true });
     },
 
     async setFavorite(input) {
-      return client.rpc("set_favorite", {
+      return client.rpc('set_favorite', {
         p_avatar_id: input.avatarId,
         p_is_favorite: input.isFavorite,
       });
@@ -71,10 +71,10 @@ export function createSupabaseDataGateway(
 
     async listTeams(input) {
       let query = client
-        .from("agent_teams")
-        .select("id, name, created_at, updated_at")
-        .order("updated_at", { ascending: false })
-        .order("id", { ascending: true })
+        .from('agent_teams')
+        .select('id, name, created_at, updated_at')
+        .order('updated_at', { ascending: false })
+        .order('id', { ascending: true })
         .limit(input.limit);
       if (input.after !== null) {
         query = query.or(
@@ -86,34 +86,34 @@ export function createSupabaseDataGateway(
 
     async listMembers(teamIds) {
       return client
-        .from("agent_team_avatars")
+        .from('agent_team_avatars')
         .select(
-          "team_id, avatar_id, position, avatars!inner(publication_status)",
+          'team_id, avatar_id, position, avatars!inner(publication_status)',
         )
-        .in("team_id", [...teamIds])
-        .order("position", { ascending: true });
+        .in('team_id', [...teamIds])
+        .order('position', { ascending: true });
     },
 
     async createTeam(input) {
-      return client.rpc("create_agent_team", {
+      return client.rpc('create_agent_team', {
         p_id: input.id,
         p_name: input.name,
       });
     },
 
     async renameTeam(input) {
-      return client.rpc("rename_agent_team", {
+      return client.rpc('rename_agent_team', {
         p_team_id: input.teamId,
         p_name: input.name,
       });
     },
 
     async deleteTeam(teamId) {
-      return client.rpc("delete_agent_team", { p_team_id: teamId });
+      return client.rpc('delete_agent_team', { p_team_id: teamId });
     },
 
     async setMembers(input) {
-      return client.rpc("set_agent_team_members", {
+      return client.rpc('set_agent_team_members', {
         p_team_id: input.teamId,
         p_avatar_ids: [...input.avatarIds],
       });
@@ -121,9 +121,9 @@ export function createSupabaseDataGateway(
 
     async getTeam(teamId) {
       return client
-        .from("agent_teams")
-        .select("id, name, created_at, updated_at")
-        .eq("id", teamId)
+        .from('agent_teams')
+        .select('id, name, created_at, updated_at')
+        .eq('id', teamId)
         .single();
     },
   };

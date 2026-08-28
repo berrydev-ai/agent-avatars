@@ -1,9 +1,9 @@
-export { createIdentityClients, type IdentityClients } from "./browser-client";
+export { createIdentityClients, type IdentityClients } from './browser-client';
 export {
   parseIdentityEnvironment,
   type IdentityEnvironment,
-} from "./environment";
-export { AppClientError } from "../contracts/identity";
+} from './environment';
+export { AppClientError } from '../contracts/identity';
 export type {
   AgentTeam,
   AppErrorCode,
@@ -15,4 +15,4 @@ export type {
   Page,
   SavedAvatarRef,
   TeamClient,
-} from "../contracts/identity";
+} from '../contracts/identity';

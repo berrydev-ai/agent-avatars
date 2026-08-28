@@ -1,22 +1,22 @@
-export type AvatarId = string & { readonly __brand: "AvatarId" };
+export type AvatarId = string & { readonly __brand: 'AvatarId' };
 
 export type AppErrorCode =
-  | "AUTH_REQUIRED"
-  | "VALIDATION_ERROR"
-  | "NOT_FOUND"
-  | "CONFLICT"
-  | "RATE_LIMITED"
-  | "NETWORK_ERROR"
-  | "UNEXPECTED_ERROR";
+  | 'AUTH_REQUIRED'
+  | 'VALIDATION_ERROR'
+  | 'NOT_FOUND'
+  | 'CONFLICT'
+  | 'RATE_LIMITED'
+  | 'NETWORK_ERROR'
+  | 'UNEXPECTED_ERROR';
 
 const errorMessages: Record<AppErrorCode, string> = {
-  AUTH_REQUIRED: "Sign in is required.",
-  VALIDATION_ERROR: "The supplied value is invalid.",
-  NOT_FOUND: "The requested item was not found.",
-  CONFLICT: "The requested change conflicts with existing data.",
-  RATE_LIMITED: "Too many attempts. Try again later.",
-  NETWORK_ERROR: "The service could not be reached.",
-  UNEXPECTED_ERROR: "An unexpected error occurred.",
+  AUTH_REQUIRED: 'Sign in is required.',
+  VALIDATION_ERROR: 'The supplied value is invalid.',
+  NOT_FOUND: 'The requested item was not found.',
+  CONFLICT: 'The requested change conflicts with existing data.',
+  RATE_LIMITED: 'Too many attempts. Try again later.',
+  NETWORK_ERROR: 'The service could not be reached.',
+  UNEXPECTED_ERROR: 'An unexpected error occurred.',
 };
 
 export class AppClientError extends Error {
@@ -26,7 +26,7 @@ export class AppClientError extends Error {
 
   constructor(code: AppErrorCode, retryable: boolean, cause?: unknown) {
     super(errorMessages[code]);
-    this.name = "AppClientError";
+    this.name = 'AppClientError';
     this.code = code;
     this.retryable = retryable;
     if (cause !== undefined) this.cause = cause;
@@ -44,15 +44,15 @@ export interface EmailPasswordInput {
 }
 
 export interface SignUpResult {
-  status: "confirmation_required";
+  status: 'confirmation_required';
   email: string;
 }
 
 export type AuthState =
-  | { status: "loading" }
-  | { status: "anonymous" }
-  | { status: "authenticated"; user: AuthUser }
-  | { status: "error"; error: AppClientError };
+  | { status: 'loading' }
+  | { status: 'anonymous' }
+  | { status: 'authenticated'; user: AuthUser }
+  | { status: 'error'; error: AppClientError };
 
 export interface AuthClient {
   getInitialState(): Promise<AuthState>;
@@ -60,10 +60,10 @@ export interface AuthClient {
   signUp(input: EmailPasswordInput): Promise<SignUpResult>;
   confirmEmail(input: {
     tokenHash: string;
-    type: "email";
-  }): Promise<{ status: "authenticated"; user: AuthUser }>;
+    type: 'email';
+  }): Promise<{ status: 'authenticated'; user: AuthUser }>;
   signIn(input: EmailPasswordInput): Promise<{
-    status: "authenticated";
+    status: 'authenticated';
     user: AuthUser;
   }>;
   signOut(): Promise<void>;
@@ -71,7 +71,7 @@ export interface AuthClient {
 
 export interface SavedAvatarRef {
   avatarId: AvatarId;
-  availability: "active" | "withdrawn";
+  availability: 'active' | 'withdrawn';
 }
 
 export interface FavoriteClient {

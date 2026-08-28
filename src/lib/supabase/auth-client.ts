@@ -1,13 +1,13 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 import type {
   AuthClient,
   AuthState,
   AuthUser,
   EmailPasswordInput,
-} from "../contracts/identity";
-import { mapProviderError, unexpectedResponse } from "./errors";
-import { parseEmailPassword, parseTokenHash } from "./validation";
+} from '../contracts/identity';
+import { mapProviderError, unexpectedResponse } from './errors';
+import { parseEmailPassword, parseTokenHash } from './validation';
 
 export interface GatewayResult<T> {
   data: T;
@@ -35,37 +35,37 @@ const authUserSchema = z.object({ id: z.string().min(1), email: z.email() });
 
 export function createAuthClient(
   gateway: AuthGateway,
-  publicSiteUrl = "http://127.0.0.1:5173",
+  publicSiteUrl = 'http://127.0.0.1:5173',
 ): AuthClient {
   return {
     async getInitialState(): Promise<AuthState> {
       try {
         const result = await gateway.getSession();
         if (result.error !== null) throw mapProviderError(result.error);
-        if (result.data.session === null) return { status: "anonymous" };
+        if (result.data.session === null) return { status: 'anonymous' };
         return {
-          status: "authenticated",
+          status: 'authenticated',
           user: parseAuthUser(result.data.session.user),
         };
       } catch (error) {
-        return { status: "error", error: mapProviderError(error) };
+        return { status: 'error', error: mapProviderError(error) };
       }
     },
 
     subscribe(listener) {
       return gateway.subscribe((user, error) => {
         if (error !== undefined) {
-          listener({ status: "error", error: mapProviderError(error) });
+          listener({ status: 'error', error: mapProviderError(error) });
           return;
         }
         if (user === null) {
-          listener({ status: "anonymous" });
+          listener({ status: 'anonymous' });
           return;
         }
         try {
-          listener({ status: "authenticated", user: parseAuthUser(user) });
+          listener({ status: 'authenticated', user: parseAuthUser(user) });
         } catch (parseError) {
-          listener({ status: "error", error: mapProviderError(parseError) });
+          listener({ status: 'error', error: mapProviderError(parseError) });
         }
       });
     },
@@ -78,7 +78,7 @@ export function createAuthClient(
       });
       if (result.error !== null) throw mapProviderError(result.error);
       if (result.data === null) throw unexpectedResponse();
-      return { status: "confirmation_required", email: parsed.email };
+      return { status: 'confirmation_required', email: parsed.email };
     },
 
     async confirmEmail(input) {
@@ -99,12 +99,12 @@ export function createAuthClient(
 }
 
 function authenticatedResult(result: GatewayResult<{ user: unknown } | null>): {
-  status: "authenticated";
+  status: 'authenticated';
   user: AuthUser;
 } {
   if (result.error !== null) throw mapProviderError(result.error);
   if (result.data === null) throw unexpectedResponse();
-  return { status: "authenticated", user: parseAuthUser(result.data.user) };
+  return { status: 'authenticated', user: parseAuthUser(result.data.user) };
 }
 
 function parseAuthUser(user: unknown): AuthUser {

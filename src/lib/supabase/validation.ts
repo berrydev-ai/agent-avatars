@@ -1,7 +1,7 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-import type { AvatarId, EmailPasswordInput } from "../contracts/identity";
-import { validationError } from "./errors";
+import type { AvatarId, EmailPasswordInput } from '../contracts/identity';
+import { validationError } from './errors';
 
 const avatarIdSchema = z
   .string()
@@ -27,7 +27,7 @@ export function parseEmailPassword(
     const password = z.string().parse(input.password);
     const passwordBytes = new TextEncoder().encode(password).byteLength;
     if (passwordBytes < 12 || passwordBytes > 72)
-      throw new Error("password byte length");
+      throw new Error('password byte length');
     return { email, password };
   });
 }
@@ -40,7 +40,7 @@ export function parseTeamName(input: string): string {
   return asValidationError(() => {
     const name = z.string().trim().parse(input);
     const length = Array.from(name).length;
-    if (length < 1 || length > 80) throw new Error("team name length");
+    if (length < 1 || length > 80) throw new Error('team name length');
     return name;
   });
 }
@@ -51,10 +51,10 @@ export function parseUuid(input: string): string {
 
 export function parseMemberIds(input: readonly string[]): readonly AvatarId[] {
   return asValidationError(() => {
-    if (input.length > 100) throw new Error("team member limit");
+    if (input.length > 100) throw new Error('team member limit');
     const parsed = input.map((value) => avatarIdSchema.parse(value));
     if (new Set(parsed).size !== parsed.length)
-      throw new Error("duplicate team member");
+      throw new Error('duplicate team member');
     return parsed;
   });
 }
@@ -68,17 +68,17 @@ export function parsePageLimit(input: number | undefined): number {
 export function encodeTeamCursor(cursor: TeamCursor): string {
   const parsed = asValidationError(() => teamCursorSchema.parse(cursor));
   return btoa(JSON.stringify(parsed))
-    .replaceAll("+", "-")
-    .replaceAll("/", "_")
-    .replace(/=+$/u, "");
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replace(/=+$/u, '');
 }
 
 export function decodeTeamCursor(cursor: string): TeamCursor {
   return asValidationError(() => {
     if (cursor.length < 1 || cursor.length > 512)
-      throw new Error("cursor length");
-    const base64 = cursor.replaceAll("-", "+").replaceAll("_", "/");
-    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+      throw new Error('cursor length');
+    const base64 = cursor.replaceAll('-', '+').replaceAll('_', '/');
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
     return teamCursorSchema.parse(JSON.parse(atob(padded)) as unknown);
   });
 }
