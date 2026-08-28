@@ -8,6 +8,8 @@ export default tseslint.config(
     ignores: [
       'dist/**',
       'node_modules/**',
+      'playwright-report/**',
+      'test-results/**',
       'public/avatars/**',
       'src/lib/supabase/database.types.ts',
       'eslint.config.js',

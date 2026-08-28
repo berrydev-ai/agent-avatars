@@ -61,3 +61,40 @@ jobs:
 
       - name: Audit production and development dependencies
         run: npm audit --audit-level=high
+
+  e2e:
+    name: Cross-browser Playwright gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VITE_APP_ENV: local
+      VITE_PUBLIC_SITE_URL: http://127.0.0.1:4173
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install from lockfile
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run cross-browser critical paths
+        run: npm run test:e2e
+
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14

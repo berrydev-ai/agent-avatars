@@ -22,10 +22,11 @@
     "test:members-cap": "tsx scripts/supabase/membership-cap-probe.ts",
     "test:db": "npm run test:db:sql && npm run test:db:integration && npm run test:members-cap",
     "test:e2e": "playwright test",
+    "serve:e2e": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "build:app": "npm run validate:manifest && vite build",
     "build:identity": "tsc -p tsconfig.build.json",
     "build": "npm run build:app && npm run build:identity",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run test:db && npm run check:database-types && npm run build"
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run test:db && npm run check:database-types && npm run test:e2e && npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.4",
@@ -34,6 +35,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@dicebear/core": "10.7.0",
     "@dicebear/styles": "10.6.0",
     "@eslint/js": "10.0.1",
