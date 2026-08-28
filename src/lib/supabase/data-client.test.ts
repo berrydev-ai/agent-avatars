@@ -136,7 +136,123 @@ describe('team client', () => {
     expect(
       page.items.reduce((count, team) => count + team.avatars.length, 0),
     ).toBe(1_100);
+    expect(
+      page.items.every(
+        (team) =>
+          team.avatars.length === 100 &&
+          team.avatars.every(
+            (avatar, position) =>
+              avatar.avatarId ===
+              `test-${position.toString(16).padStart(20, '0')}`,
+          ),
+      ),
+    ).toBe(true);
     expect(listMembers).toHaveBeenCalledTimes(2);
+  });
+
+  it('deduplicates member rows and keeps each team deterministically ordered', async () => {
+    const teamTwo = {
+      ...teamOne,
+      id: '10000000-0000-4000-8000-000000000002',
+      name: 'Beta',
+    };
+    const firstMember = {
+      team_id: teamOne.id,
+      avatar_id: 'test-aaaaaaaaaaaaaaaaaaaa',
+      position: 0,
+      avatars: { publication_status: 'active' as const },
+    };
+    const gateway = createGateway({
+      listTeams: vi.fn().mockReturnValue(result([teamOne, teamTwo])),
+      listMembers: vi.fn().mockReturnValue(
+        result([
+          {
+            team_id: teamOne.id,
+            avatar_id: 'test-bbbbbbbbbbbbbbbbbbbb',
+            position: 1,
+            avatars: { publication_status: 'withdrawn' },
+          },
+          firstMember,
+          firstMember,
+          {
+            team_id: teamTwo.id,
+            avatar_id: 'test-cccccccccccccccccccc',
+            position: 0,
+            avatars: { publication_status: 'active' },
+          },
+        ]),
+      ),
+    });
+
+    const page = await createTeamClient(gateway).listTeams({ limit: 2 });
+
+    expect(page.items.map((team) => team.avatars)).toEqual([
+      [
+        { avatarId: firstMember.avatar_id, availability: 'active' },
+        {
+          avatarId: 'test-bbbbbbbbbbbbbbbbbbbb',
+          availability: 'withdrawn',
+        },
+      ],
+      [
+        {
+          avatarId: 'test-cccccccccccccccccccc',
+          availability: 'active',
+        },
+      ],
+    ]);
+  });
+
+  it('rejects the whole membership read when a later chunk fails', async () => {
+    const teams = Array.from({ length: 11 }, (_, index) => ({
+      ...teamOne,
+      id: `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+      name: `Team ${String(index + 1)}`,
+    }));
+    const listMembers = vi
+      .fn()
+      .mockReturnValueOnce(
+        result([
+          {
+            team_id: teams[0]?.id,
+            avatar_id: 'test-aaaaaaaaaaaaaaaaaaaa',
+            position: 0,
+            avatars: { publication_status: 'active' },
+          },
+        ]),
+      )
+      .mockReturnValueOnce(
+        Promise.resolve({ data: null, error: new TypeError('page failed') }),
+      );
+    const gateway = createGateway({
+      listTeams: vi.fn().mockReturnValue(result(teams)),
+      listMembers,
+    });
+
+    await expect(
+      createTeamClient(gateway).listTeams({ limit: 11 }),
+    ).rejects.toMatchObject({ code: 'NETWORK_ERROR', retryable: true });
+    expect(listMembers).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects member rows outside the requested team scope', async () => {
+    const gateway = createGateway({
+      listTeams: vi.fn().mockReturnValue(result([teamOne])),
+      listMembers: vi.fn().mockReturnValue(
+        result([
+          {
+            team_id: '20000000-0000-4000-8000-000000000001',
+            avatar_id: 'test-aaaaaaaaaaaaaaaaaaaa',
+            position: 0,
+            avatars: { publication_status: 'active' },
+          },
+        ]),
+      ),
+    });
+
+    await expect(
+      createTeamClient(gateway).listTeams({ limit: 1 }),
+    ).rejects.toMatchObject({ code: 'UNEXPECTED_ERROR' });
   });
 
   it('validates and normalizes creates while preserving the caller intent ID', async () => {

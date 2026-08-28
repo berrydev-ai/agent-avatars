@@ -73,7 +73,11 @@ const storedMembersSchema = z.array(
     position: z.number().int().min(0).max(99),
   }),
 );
-const MEMBER_TEAM_CHUNK_SIZE = 10;
+const POSTGREST_MEMBER_ROW_CAP = 1_000;
+const TEAM_MEMBER_LIMIT = 100;
+const MEMBER_TEAM_CHUNK_SIZE = Math.floor(
+  POSTGREST_MEMBER_ROW_CAP / TEAM_MEMBER_LIMIT,
+);
 
 export function createFavoriteClient(
   gateway: IdentityDataGateway,
@@ -180,25 +184,50 @@ async function loadMembers(
   teamIds: readonly string[],
 ): Promise<Map<string, SavedAvatarRef[]>> {
   if (teamIds.length === 0) return new Map();
+  const uniqueTeamIds = [...new Set(teamIds)];
   const chunks = Array.from(
-    { length: Math.ceil(teamIds.length / MEMBER_TEAM_CHUNK_SIZE) },
+    { length: Math.ceil(uniqueTeamIds.length / MEMBER_TEAM_CHUNK_SIZE) },
     (_, index) =>
-      teamIds.slice(
+      uniqueTeamIds.slice(
         index * MEMBER_TEAM_CHUNK_SIZE,
         (index + 1) * MEMBER_TEAM_CHUNK_SIZE,
       ),
   );
-  const rows = (
-    await Promise.all(
-      chunks.map(async (chunk) =>
-        parseProviderData(memberRowsSchema, await gateway.listMembers(chunk)),
-      ),
-    )
-  ).flat();
+  const chunkRows = await Promise.all(
+    chunks.map(async (chunk) =>
+      parseProviderData(memberRowsSchema, await gateway.listMembers(chunk)),
+    ),
+  );
+  const uniqueRows = new Map<
+    string,
+    z.infer<typeof memberRowsSchema>[number]
+  >();
+  for (const [index, rows] of chunkRows.entries()) {
+    const teamScope = new Set(chunks[index]);
+    for (const row of rows) {
+      if (!teamScope.has(row.team_id)) throw unexpectedResponse();
+      const key = `${row.team_id}\u0000${row.avatar_id}`;
+      const existing = uniqueRows.get(key);
+      if (
+        existing !== undefined &&
+        (existing.position !== row.position ||
+          existing.avatars.publication_status !==
+            row.avatars.publication_status)
+      ) {
+        throw unexpectedResponse();
+      }
+      uniqueRows.set(key, row);
+    }
+  }
+  const rows = [...uniqueRows.values()].sort((left, right) => {
+    if (left.team_id !== right.team_id)
+      return left.team_id < right.team_id ? -1 : 1;
+    if (left.position !== right.position) return left.position - right.position;
+    if (left.avatar_id === right.avatar_id) return 0;
+    return left.avatar_id < right.avatar_id ? -1 : 1;
+  });
   const members = new Map<string, SavedAvatarRef[]>();
-  for (const row of [...rows].sort(
-    (left, right) => left.position - right.position,
-  )) {
+  for (const row of rows) {
     const teamMembers = members.get(row.team_id) ?? [];
     teamMembers.push({
       avatarId: parseAvatarId(row.avatar_id),
