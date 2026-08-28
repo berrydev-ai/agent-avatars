@@ -36,29 +36,61 @@ export function parseIdentityEnvironment(
 function parseSupabaseBrowserKey(input: string | undefined): string {
   const value = z.string().trim().min(1).parse(input);
   const isPublishableKey = /^sb_publishable_[A-Za-z0-9_-]+$/.test(value);
-  const isLegacyAnonKey = decodeJwtRole(value) === 'anon';
+  const isLegacyAnonKey = isLegacyJwtForRole(value, 'anon');
   if (!isPublishableKey && !isLegacyAnonKey) {
     throw new Error('publishable or legacy anon key required');
   }
   return value;
 }
 
-function decodeJwtRole(value: string): string | undefined {
+function isLegacyJwtForRole(value: string, expectedRole: string): boolean {
   const segments = value.split('.');
-  if (segments.length !== 3) return undefined;
-  const payloadSegment = segments[1];
-  if (payloadSegment === undefined) return undefined;
+  if (segments.length !== 3) return false;
+  const [headerSegment, payloadSegment, signatureSegment] = segments;
+  if (
+    headerSegment === undefined ||
+    payloadSegment === undefined ||
+    signatureSegment === undefined ||
+    !isBase64UrlSegment(signatureSegment)
+  )
+    return false;
+
+  const header = decodeJwtObject(headerSegment);
+  const payload = decodeJwtObject(payloadSegment);
+  return (
+    typeof header?.alg === 'string' &&
+    header.alg.length > 0 &&
+    payload?.role === expectedRole
+  );
+}
+
+function decodeJwtObject(segment: string): Record<string, unknown> | undefined {
+  if (!isBase64UrlSegment(segment)) return undefined;
   try {
-    const base64 = payloadSegment.replaceAll('-', '+').replaceAll('_', '/');
-    const payload = JSON.parse(
-      atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')),
-    ) as unknown;
-    if (typeof payload !== 'object' || payload === null) return undefined;
-    const role = (payload as { role?: unknown }).role;
-    return typeof role === 'string' ? role : undefined;
+    const base64 = segment.replaceAll('-', '+').replaceAll('_', '/');
+    const binary = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
+    const bytes = Uint8Array.from(binary, (character) =>
+      character.charCodeAt(0),
+    );
+    const decoded = JSON.parse(new TextDecoder().decode(bytes)) as unknown;
+    if (
+      typeof decoded !== 'object' ||
+      decoded === null ||
+      Array.isArray(decoded)
+    )
+      return undefined;
+    return decoded as Record<string, unknown>;
   } catch {
     return undefined;
   }
+}
+
+function isBase64UrlSegment(segment: string): boolean {
+  return (
+    segment.length > 0 &&
+    segment.length % 4 !== 1 &&
+    /^[A-Za-z0-9_-]+$/.test(segment)
+  );
 }
 
 function parseOrigin(

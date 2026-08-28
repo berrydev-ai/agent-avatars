@@ -69,11 +69,70 @@ describe('auth client', () => {
     expect(gateway.signOut).toHaveBeenCalledOnce();
   });
 
-  it('keeps provider startup failures visible', async () => {
+  it('treats an already-cleared stale session as anonymous', async () => {
     const gateway = createGateway({
       getSession: vi.fn().mockResolvedValue({
         data: { session: null },
+        error: { code: 'refresh_token_not_found', status: 400 },
+      }),
+      signOut: vi.fn().mockResolvedValue({
+        error: { code: 'session_not_found', status: 403 },
+      }),
+    });
+
+    await expect(createAuthClient(gateway).getInitialState()).resolves.toEqual({
+      status: 'anonymous',
+    });
+  });
+
+  it.each([
+    [
+      'network response',
+      vi.fn().mockResolvedValue({
+        data: { session: null },
         error: new TypeError('provider unavailable'),
+      }),
+      'NETWORK_ERROR',
+      true,
+    ],
+    [
+      'network rejection',
+      vi.fn().mockRejectedValue(new TypeError('provider unavailable')),
+      'NETWORK_ERROR',
+      true,
+    ],
+    [
+      'provider response',
+      vi.fn().mockResolvedValue({
+        data: { session: null },
+        error: { code: 'provider_failure', status: 503 },
+      }),
+      'UNEXPECTED_ERROR',
+      false,
+    ],
+  ])(
+    'keeps %s startup failures visible',
+    async (_failureClass, getSession, code, retryable) => {
+      const gateway = createGateway({ getSession });
+
+      await expect(
+        createAuthClient(gateway).getInitialState(),
+      ).resolves.toMatchObject({
+        status: 'error',
+        error: { code, retryable },
+      });
+      expect(gateway.signOut).not.toHaveBeenCalled();
+    },
+  );
+
+  it('keeps cleanup provider failures visible', async () => {
+    const gateway = createGateway({
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: null },
+        error: { code: 'session_expired', status: 400 },
+      }),
+      signOut: vi.fn().mockResolvedValue({
+        error: { code: 'provider_failure', status: 503 },
       }),
     });
 
@@ -81,9 +140,8 @@ describe('auth client', () => {
       createAuthClient(gateway).getInitialState(),
     ).resolves.toMatchObject({
       status: 'error',
-      error: { code: 'NETWORK_ERROR', retryable: true },
+      error: { code: 'UNEXPECTED_ERROR', retryable: false },
     });
-    expect(gateway.signOut).not.toHaveBeenCalled();
   });
 
   it('passes normalized signup input and the approved redirect', async () => {

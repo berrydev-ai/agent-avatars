@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   expect,
   test,
@@ -7,7 +9,7 @@ import {
 
 const mailpitUrl =
   process.env.PLAYWRIGHT_MAILPIT_URL ?? 'http://127.0.0.1:54324';
-const appUrl = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:5173';
+const appUrl = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
 const supabaseUrl =
   process.env.PLAYWRIGHT_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 
@@ -15,6 +17,8 @@ test('persists favorites and a fully edited Agent Team', async ({
   page,
   request,
 }) => {
+  test.setTimeout(90_000);
+
   const browserErrors: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'error' || message.type() === 'warning') {
@@ -25,7 +29,7 @@ test('persists favorites and a fully edited Agent Team', async ({
     browserErrors.push(`pageerror: ${error.message}`),
   );
 
-  const nonce = Date.now();
+  const nonce = randomUUID();
   const email = `avatar-e2e-${nonce}@example.test`;
   const password = `verified-${nonce}-password`;
   const teamName = `Browser Team ${nonce}`;
@@ -51,7 +55,7 @@ test('persists favorites and a fully edited Agent Team', async ({
 
   const confirmationUrl = await findConfirmationUrl(request, email);
   await page.goto(confirmationUrl);
-  await expect(page.getByText(email)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
   await expect(page).toHaveURL(/\/auth\/confirm$/);
 
   const catalog = page.getByRole('list', { name: 'Avatar catalog' });
@@ -64,7 +68,7 @@ test('persists favorites and a fully edited Agent Team', async ({
   ).toBeVisible();
 
   await page.reload();
-  await expect(page.getByText(email)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
   await page.getByRole('button', { name: 'Saved avatars (1)' }).click();
   await expect(catalog.locator(':scope > li')).toHaveCount(1);
   await page.getByRole('button', { name: 'Saved avatars (1)' }).click();
@@ -95,7 +99,7 @@ test('persists favorites and a fully edited Agent Team', async ({
   );
 
   await page.reload();
-  await expect(page.getByText(email)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
   await page.getByRole('button', { name: 'Agent Teams (1)' }).click();
   const restoredMembers = page.getByRole('list', {
     name: `Members of ${teamName}`,

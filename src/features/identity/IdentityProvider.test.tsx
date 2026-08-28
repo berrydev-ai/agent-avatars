@@ -3,7 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AuthState, IdentityClients } from '../../lib/supabase';
+import {
+  AppClientError,
+  type AuthState,
+  type IdentityClients,
+} from '../../lib/supabase';
 import { AccountControls } from './AccountControls';
 import { IdentityProvider } from './IdentityProvider';
 import { useIdentity } from './identity-context';
@@ -146,6 +150,40 @@ describe('IdentityProvider', () => {
 });
 
 describe('AccountControls', () => {
+  it.each([
+    ['malformed', '#token_hash=&type=email', null],
+    [
+      'rejected',
+      '#token_hash=reused-token&type=email',
+      new AppClientError('VALIDATION_ERROR', false),
+    ],
+  ])(
+    'announces a generic account-link error for a %s confirmation',
+    async (_failureClass, hash, rejection) => {
+      window.history.replaceState({}, '', `/auth/confirm${hash}`);
+      const confirmEmail =
+        rejection === null ? vi.fn() : vi.fn().mockRejectedValue(rejection);
+      const clients = createClients({ confirmEmail });
+
+      render(
+        <IdentityProvider clients={clients}>
+          <AccountControls />
+          <p>Public catalog</p>
+        </IdentityProvider>,
+      );
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        /account link is invalid or expired/i,
+      );
+      expect(screen.getByText('Public catalog')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /sign in/i })).toBeVisible();
+      expect(window.location.hash).toBe('');
+      if (rejection === null) expect(confirmEmail).not.toHaveBeenCalled();
+      else expect(confirmEmail).toHaveBeenCalledOnce();
+      window.history.replaceState({}, '', '/');
+    },
+  );
+
   it('signs in and signs out while keeping account errors locally authored', async () => {
     const user = userEvent.setup();
     const clients = createClients();

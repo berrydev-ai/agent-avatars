@@ -103,6 +103,12 @@ export function AccountControls() {
 
   return (
     <div className="account-entry">
+      {auth.status === 'error' ? (
+        <p className="account-inline-error" role="alert">
+          This account link is invalid or expired. Sign in or request a new
+          confirmation email.
+        </p>
+      ) : null}
       <button
         ref={triggerRef}
         className="button button-header"

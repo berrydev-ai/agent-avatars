@@ -120,6 +120,11 @@ describe('Agent Teams editor', () => {
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /delete beta/i }));
+    expect(
+      screen.getByRole('alertdialog', {
+        name: /delete beta and all of its membership/i,
+      }),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /^cancel$/i }));
     expect(screen.getByRole('heading', { name: 'Beta' })).toBeInTheDocument();
 

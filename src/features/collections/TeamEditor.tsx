@@ -24,6 +24,7 @@ export function TeamEditor({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const deleteRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const deletePromptId = `delete-${team.id}-prompt`;
 
   useEffect(() => {
     if (confirmingDelete) confirmRef.current?.focus();
@@ -131,8 +132,14 @@ export function TeamEditor({
 
       <div className="team-delete-area">
         {confirmingDelete ? (
-          <div className="delete-confirmation" role="alertdialog">
-            <p>Delete {team.name} and all of its membership?</p>
+          <div
+            className="delete-confirmation"
+            role="alertdialog"
+            aria-labelledby={deletePromptId}
+          >
+            <p id={deletePromptId}>
+              Delete {team.name} and all of its membership?
+            </p>
             <button
               ref={confirmRef}
               className="button button-danger"

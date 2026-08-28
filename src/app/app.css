@@ -100,6 +100,13 @@ input {
   color: #ffe0b0;
 }
 
+.account-entry > .account-inline-error {
+  max-width: 24rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  text-align: right;
+}
+
 .account-panel {
   position: absolute;
   z-index: 10;
