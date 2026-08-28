@@ -41,7 +41,7 @@ function createClients(
       ...favoriteOverrides,
     },
     teams: {
-      listTeams: vi.fn(),
+      listTeams: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
       createTeam: vi.fn(),
       renameTeam: vi.fn(),
       deleteTeam: vi.fn(),

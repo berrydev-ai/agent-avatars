@@ -8,6 +8,9 @@ interface AvatarCardProps {
   favoriteBusy?: boolean | undefined;
   onToggleFavorite?:
     ((avatar: AvatarRecord, label: string) => void) | undefined;
+  teamActionLabel?: string | undefined;
+  teamBusy?: boolean | undefined;
+  onTeamAction?: ((avatar: AvatarRecord) => void) | undefined;
   onDownload: (avatar: AvatarRecord) => void;
   onOpen: (avatar: AvatarRecord) => void;
   onCopy: (avatar: AvatarRecord) => void;
@@ -20,6 +23,9 @@ export function AvatarCard({
   isFavorite,
   favoriteBusy,
   onToggleFavorite,
+  teamActionLabel,
+  teamBusy,
+  onTeamAction,
   onDownload,
   onOpen,
   onCopy,
@@ -58,6 +64,17 @@ export function AvatarCard({
           >
             <span aria-hidden="true">{isFavorite ? '♥' : '♡'}</span>
             {isFavorite ? 'Saved' : 'Save'}
+          </button>
+        ) : null}
+        {onTeamAction && teamActionLabel ? (
+          <button
+            className="team-card-button"
+            type="button"
+            aria-label={teamActionAriaLabel(teamActionLabel, name)}
+            disabled={teamBusy}
+            onClick={() => onTeamAction(avatar)}
+          >
+            {teamActionLabel}
           </button>
         ) : null}
         <p className="avatar-name">{name}</p>
@@ -100,4 +117,14 @@ function readablePreset(preset: string): string {
     .split('-')
     .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
     .join(' ');
+}
+
+function teamActionAriaLabel(action: string, name: string): string {
+  if (action.startsWith('Add to ')) {
+    return `Add ${name} to ${action.slice('Add to '.length)}`;
+  }
+  if (action.startsWith('Remove from ')) {
+    return `Remove ${name} from ${action.slice('Remove from '.length)}`;
+  }
+  return action;
 }

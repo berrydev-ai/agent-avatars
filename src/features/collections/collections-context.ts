@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
+import type { TeamCollections } from './useTeams';
 
-export interface CollectionsContextValue {
+export interface CollectionsContextValue extends TeamCollections {
   authenticated: boolean;
   favoriteStatus: 'anonymous' | 'loading' | 'ready' | 'error';
   favoriteIds: ReadonlySet<string>;

@@ -11,6 +11,7 @@ import { filterAvatars } from './search';
 import { parseCatalogQuery, serializeCatalogQuery } from './url-state';
 import { AccountControls } from '../identity/AccountControls';
 import { useOptionalCollections } from '../collections/collections-context';
+import { TeamsPanel } from '../collections/TeamsPanel';
 
 interface CatalogPageProps {
   manifest: AvatarManifest;
@@ -24,6 +25,9 @@ interface ActionFeedback {
 
 export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
   const collections = useOptionalCollections();
+  const selectedTeam = collections?.teams.find(
+    ({ id }) => id === collections.selectedTeamId,
+  );
   const knownTags = useMemo(
     () => new Set(manifest.tagDefinitions.map(({ key }) => key)),
     [manifest.tagDefinitions],
@@ -186,6 +190,8 @@ export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
           </div>
         ) : null}
 
+        <TeamsPanel avatars={manifest.avatars} />
+
         {collections?.message ? (
           <div
             className="collection-feedback"
@@ -213,30 +219,61 @@ export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
 
         {results.length > 0 ? (
           <ul className="avatar-grid" aria-label="Avatar catalog">
-            {results.map((avatar) => (
-              <AvatarCard
-                key={avatar.id}
-                avatar={avatar}
-                tagDefinitions={tagDefinitions}
-                busyAction={
-                  busyAction.startsWith(`${avatar.id}:`)
-                    ? busyAction.slice(avatar.id.length + 1)
-                    : undefined
-                }
-                onDownload={(record) => void handleDownload(record)}
-                onOpen={handleOpen}
-                onCopy={(record) => void handleCopy(record)}
-                isFavorite={collections?.favoriteIds.has(avatar.id)}
-                favoriteBusy={collections?.busyFavoriteIds.has(avatar.id)}
-                onToggleFavorite={
-                  collections?.authenticated &&
-                  collections.favoriteStatus === 'ready'
-                    ? (record, label) =>
-                        void collections.toggleFavorite(record.id, label)
-                    : undefined
-                }
-              />
-            ))}
+            {results.map((avatar) => {
+              const isTeamMember = selectedTeam?.avatars.some(
+                ({ avatarId }) => avatarId === avatar.id,
+              );
+              return (
+                <AvatarCard
+                  key={avatar.id}
+                  avatar={avatar}
+                  tagDefinitions={tagDefinitions}
+                  busyAction={
+                    busyAction.startsWith(`${avatar.id}:`)
+                      ? busyAction.slice(avatar.id.length + 1)
+                      : undefined
+                  }
+                  onDownload={(record) => void handleDownload(record)}
+                  onOpen={handleOpen}
+                  onCopy={(record) => void handleCopy(record)}
+                  isFavorite={collections?.favoriteIds.has(avatar.id)}
+                  favoriteBusy={collections?.busyFavoriteIds.has(avatar.id)}
+                  onToggleFavorite={
+                    collections?.authenticated &&
+                    collections.favoriteStatus === 'ready'
+                      ? (record, label) =>
+                          void collections.toggleFavorite(record.id, label)
+                      : undefined
+                  }
+                  teamActionLabel={
+                    selectedTeam
+                      ? `${isTeamMember ? 'Remove from' : 'Add to'} ${selectedTeam.name}`
+                      : undefined
+                  }
+                  teamBusy={
+                    selectedTeam
+                      ? collections?.busyTeamIds.has(selectedTeam.id)
+                      : undefined
+                  }
+                  onTeamAction={
+                    selectedTeam && collections
+                      ? (record) => {
+                          const currentIds = selectedTeam.avatars.map(
+                            ({ avatarId }) => avatarId,
+                          );
+                          const avatarIds = isTeamMember
+                            ? currentIds.filter((id) => id !== record.id)
+                            : [...currentIds, record.id];
+                          void collections.updateTeamMembers({
+                            teamId: selectedTeam.id,
+                            avatarIds,
+                          });
+                        }
+                      : undefined
+                  }
+                />
+              );
+            })}
           </ul>
         ) : (
           <section className="empty-state" aria-labelledby="empty-title">

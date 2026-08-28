@@ -6,6 +6,7 @@ import {
   CollectionsContext,
   type CollectionsContextValue,
 } from './collections-context';
+import { useTeams } from './useTeams';
 
 const anonymousCollections: CollectionsContextValue = {
   authenticated: false,
@@ -14,6 +15,18 @@ const anonymousCollections: CollectionsContextValue = {
   busyFavoriteIds: new Set(),
   message: '',
   toggleFavorite: () => Promise.resolve(),
+  teamStatus: 'error',
+  teams: [],
+  selectedTeamId: null,
+  nextTeamCursor: null,
+  busyTeamIds: new Set(),
+  teamMessage: '',
+  selectTeam: () => undefined,
+  createTeam: () => Promise.resolve(false),
+  renameTeam: () => Promise.resolve(false),
+  deleteTeam: () => Promise.resolve(false),
+  updateTeamMembers: () => Promise.resolve(false),
+  loadMoreTeams: () => Promise.resolve(),
 };
 
 export function CollectionsProvider({ children }: { children: ReactNode }) {
@@ -52,6 +65,7 @@ function AuthenticatedCollections({
     new Set(),
   );
   const [message, setMessage] = useState('');
+  const teamCollections = useTeams(clients.teams);
 
   useEffect(() => {
     let active = true;
@@ -79,6 +93,7 @@ function AuthenticatedCollections({
       favoriteIds,
       busyFavoriteIds,
       message,
+      ...teamCollections,
       async toggleFavorite(avatarId, label) {
         if (favoriteStatus !== 'ready' || busyFavoriteIds.has(avatarId)) return;
         const wasFavorite = favoriteIds.has(avatarId);
@@ -109,7 +124,14 @@ function AuthenticatedCollections({
         }
       },
     }),
-    [busyFavoriteIds, clients.favorites, favoriteIds, favoriteStatus, message],
+    [
+      busyFavoriteIds,
+      clients.favorites,
+      favoriteIds,
+      favoriteStatus,
+      message,
+      teamCollections,
+    ],
   );
 
   return (
