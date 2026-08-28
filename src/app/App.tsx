@@ -13,16 +13,11 @@ type CatalogState =
   | { status: 'ready'; manifest: AvatarManifest }
   | { status: 'error' };
 
+const configuredIdentityClients = configureIdentityClients();
+
 export function App() {
   const [catalog, setCatalog] = useState<CatalogState>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
-  const [identityClients] = useState<IdentityClients | null>(() => {
-    try {
-      return createIdentityClients(import.meta.env, window.sessionStorage);
-    } catch {
-      return null;
-    }
-  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -48,7 +43,7 @@ export function App() {
     const configuredOrigin =
       typeof rawConfiguredOrigin === 'string' ? rawConfiguredOrigin : '';
     return (
-      <IdentityProvider clients={identityClients}>
+      <IdentityProvider clients={configuredIdentityClients}>
         <CollectionsProvider>
           <CatalogPage
             manifest={catalog.manifest}
@@ -102,4 +97,12 @@ export function App() {
       )}
     </main>
   );
+}
+
+function configureIdentityClients(): IdentityClients | null {
+  try {
+    return createIdentityClients(import.meta.env, window.sessionStorage);
+  } catch {
+    return null;
+  }
 }
