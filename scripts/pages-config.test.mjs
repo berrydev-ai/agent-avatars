@@ -12,6 +12,7 @@ import {
   inspectPagesOutput,
   renderPagesHeaders,
   scanPagesOutputForSecrets,
+  validateProductionEnvironment,
   validatePreviewEnvironment,
   validatePublishableKey,
 } from './pages-config.mjs';
@@ -26,6 +27,16 @@ const validEnvironment = {
   VITE_APP_ENV: 'preview',
   VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test_value',
   VITE_SUPABASE_URL: 'https://example.supabase.co',
+};
+
+const validProductionEnvironment = {
+  CF_PAGES: '1',
+  CF_PAGES_BRANCH: 'main',
+  CF_PAGES_COMMIT_SHA: 'b'.repeat(40),
+  VITE_APP_ENV: 'production',
+  VITE_PUBLIC_SITE_URL: 'https://agent-avatars.dev',
+  VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_production_value',
+  VITE_SUPABASE_URL: 'https://production.supabase.co',
 };
 
 test('normalizes an approved preview environment', () => {
@@ -50,6 +61,29 @@ test('rejects production branches and non-Pages origins', () => {
         CF_PAGES_URL: 'https://agent-avatars.dev',
       }),
     /pages\.dev preview origin/,
+  );
+});
+
+test('accepts only the main production deployment context', () => {
+  const actual = validateProductionEnvironment(validProductionEnvironment);
+  assert.equal(actual.VITE_PUBLIC_SITE_URL, 'https://agent-avatars.dev');
+  assert.equal(actual.VITE_SUPABASE_URL, 'https://production.supabase.co');
+
+  assert.throws(
+    () =>
+      validateProductionEnvironment({
+        ...validProductionEnvironment,
+        CF_PAGES_BRANCH: 'feature/not-main',
+      }),
+    /CF_PAGES_BRANCH must be main/,
+  );
+  assert.throws(
+    () =>
+      validateProductionEnvironment({
+        ...validProductionEnvironment,
+        VITE_PUBLIC_SITE_URL: 'https://agent-avatars-d31.pages.dev',
+      }),
+    /VITE_PUBLIC_SITE_URL must be https:\/\/agent-avatars\.dev/,
   );
 });
 
@@ -159,4 +193,39 @@ test('build wrapper creates and validates deployable Pages output', async (conte
   );
   assert.match(headers, /Content-Security-Policy/);
   assert.match(headers, /https:\/\/example\.supabase\.co/);
+});
+
+test('build wrapper accepts the production deployment context', async (context) => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'pages-production-build-'));
+  context.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(
+    path.join(directory, 'package.json'),
+    JSON.stringify({
+      private: true,
+      scripts: { build: 'node build-fixture.mjs' },
+    }),
+  );
+  await writeFile(
+    path.join(directory, 'build-fixture.mjs'),
+    "import { mkdir, writeFile } from 'node:fs/promises';\n" +
+      "await mkdir('dist/avatars', { recursive: true });\n" +
+      "await writeFile('dist/index.html', '<!doctype html>');\n" +
+      "await writeFile('dist/avatars/manifest.json', '[]');\n",
+  );
+
+  await execFileAsync(
+    process.execPath,
+    [path.resolve('scripts/pages-build.mjs')],
+    {
+      cwd: directory,
+      env: { ...process.env, ...validProductionEnvironment },
+    },
+  );
+
+  const headers = await readFile(
+    path.join(directory, 'dist', '_headers'),
+    'utf8',
+  );
+  assert.match(headers, /Content-Security-Policy/);
+  assert.match(headers, /https:\/\/production\.supabase\.co/);
 });

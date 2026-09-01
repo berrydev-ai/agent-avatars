@@ -15,6 +15,7 @@ export const CLOUDFLARE_FILE_SIZE_LIMIT = 25 * 1024 * 1024;
 
 const COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/;
 const PRODUCTION_BRANCHES = new Set(['main', 'master', 'production']);
+const PRODUCTION_SITE_ORIGIN = 'https://agent-avatars.dev';
 const SECRET_MARKERS = [
   /sb_secret_[A-Za-z0-9_-]+/,
   /SUPABASE_SERVICE_ROLE_KEY/,
@@ -123,6 +124,48 @@ export function validatePreviewEnvironment(environment) {
   if (siteUrl.origin !== pagesUrl.origin) {
     throw new Error(
       'VITE_PUBLIC_SITE_URL must match CF_PAGES_URL for preview builds',
+    );
+  }
+
+  const supabaseUrl = parseOrigin(
+    'VITE_SUPABASE_URL',
+    environment.VITE_SUPABASE_URL ?? '',
+  );
+  validatePublishableKey(environment.VITE_SUPABASE_PUBLISHABLE_KEY ?? '');
+
+  return {
+    ...environment,
+    VITE_PUBLIC_SITE_URL: siteUrl.origin,
+    VITE_SUPABASE_URL: supabaseUrl.origin,
+  };
+}
+
+export function validateProductionEnvironment(environment) {
+  if (environment.CF_PAGES !== '1') {
+    throw new Error('CF_PAGES must be 1 for a Pages production build');
+  }
+
+  if (environment.CF_PAGES_BRANCH !== 'main') {
+    throw new Error('CF_PAGES_BRANCH must be main for production builds');
+  }
+
+  if (!COMMIT_SHA_PATTERN.test(environment.CF_PAGES_COMMIT_SHA ?? '')) {
+    throw new Error(
+      'CF_PAGES_COMMIT_SHA must be a full lowercase Git commit SHA',
+    );
+  }
+
+  if (environment.VITE_APP_ENV !== 'production') {
+    throw new Error('VITE_APP_ENV must be production');
+  }
+
+  const siteUrl = parseOrigin(
+    'VITE_PUBLIC_SITE_URL',
+    environment.VITE_PUBLIC_SITE_URL ?? '',
+  );
+  if (siteUrl.origin !== PRODUCTION_SITE_ORIGIN) {
+    throw new Error(
+      `VITE_PUBLIC_SITE_URL must be ${PRODUCTION_SITE_ORIGIN} for production builds`,
     );
   }
 
