@@ -1,0 +1,120 @@
+name: Cloudflare Pages production
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    name: Deploy merged main commit
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: cloudflare-production
+      url: https://agent-avatars.dev
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: read
+    env:
+      CF_PAGES: '1'
+      CF_PAGES_BRANCH: production
+      CF_PAGES_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+      CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+      VITE_APP_ENV: production
+      VITE_PUBLIC_SITE_URL: https://agent-avatars.dev
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+    steps:
+      - name: Confirm the commit came from a merged pull request
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const commitSha = context.payload.workflow_run.head_sha;
+            const { data: pullRequests } =
+              await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: commitSha,
+              });
+            const mergedPullRequest = pullRequests.find(
+              (pullRequest) =>
+                pullRequest.merged_at &&
+                pullRequest.base.ref === 'main' &&
+                pullRequest.merge_commit_sha === commitSha,
+            );
+
+            if (!mergedPullRequest) {
+              core.setFailed(
+                `${commitSha} is not the merge commit of a pull request into main.`,
+              );
+              return;
+            }
+
+            core.info(
+              `Deploying merge commit from pull request #${mergedPullRequest.number}.`,
+            );
+
+      - name: Check out the verified merge commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install from lockfile
+        run: npm ci
+
+      - name: Test Pages delivery configuration
+        run: node --test scripts/pages-config.test.mjs
+
+      - name: Build and validate production assets
+        run: node scripts/pages-build.mjs
+
+      - name: Deploy production
+        id: deploy
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          packageManager: npm
+          wranglerVersion: 4.127.0
+          command: >-
+            pages deploy dist
+            --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+            --branch=production
+            --commit-hash=${{ github.event.workflow_run.head_sha }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Record production deployment evidence
+        env:
+          DEPLOYMENT_ID: ${{ steps.deploy.outputs.pages-deployment-id }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          {
+            echo "### Cloudflare Pages production"
+            echo
+            echo "- Commit: \`$CF_PAGES_COMMIT_SHA\`"
+            echo "- Deployment ID: \`$DEPLOYMENT_ID\`"
+            echo "- Immutable URL: $DEPLOYMENT_URL"
+            echo "- Production URL: https://agent-avatars.dev"
+          } >> "$GITHUB_STEP_SUMMARY"

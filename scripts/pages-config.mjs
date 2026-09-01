@@ -15,6 +15,7 @@ export const CLOUDFLARE_FILE_SIZE_LIMIT = 25 * 1024 * 1024;
 
 const COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/;
 const PRODUCTION_BRANCHES = new Set(['main', 'master', 'production']);
+const PRODUCTION_PAGES_PROJECT = 'agent-avatars';
 const PRODUCTION_SITE_ORIGIN = 'https://agent-avatars.dev';
 const SECRET_MARKERS = [
   /sb_secret_[A-Za-z0-9_-]+/,
@@ -145,8 +146,14 @@ export function validateProductionEnvironment(environment) {
     throw new Error('CF_PAGES must be 1 for a Pages production build');
   }
 
-  if (environment.CF_PAGES_BRANCH !== 'main') {
-    throw new Error('CF_PAGES_BRANCH must be main for production builds');
+  if (environment.CF_PAGES_BRANCH !== 'production') {
+    throw new Error('CF_PAGES_BRANCH must be production for production builds');
+  }
+
+  if (environment.CLOUDFLARE_PAGES_PROJECT !== PRODUCTION_PAGES_PROJECT) {
+    throw new Error(
+      `CLOUDFLARE_PAGES_PROJECT must be ${PRODUCTION_PAGES_PROJECT} for production builds`,
+    );
   }
 
   if (!COMMIT_SHA_PATTERN.test(environment.CF_PAGES_COMMIT_SHA ?? '')) {

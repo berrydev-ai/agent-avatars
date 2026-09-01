@@ -31,8 +31,9 @@ const validEnvironment = {
 
 const validProductionEnvironment = {
   CF_PAGES: '1',
-  CF_PAGES_BRANCH: 'main',
+  CF_PAGES_BRANCH: 'production',
   CF_PAGES_COMMIT_SHA: 'b'.repeat(40),
+  CLOUDFLARE_PAGES_PROJECT: 'agent-avatars',
   VITE_APP_ENV: 'production',
   VITE_PUBLIC_SITE_URL: 'https://agent-avatars.dev',
   VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_production_value',
@@ -64,7 +65,7 @@ test('rejects production branches and non-Pages origins', () => {
   );
 });
 
-test('accepts only the main production deployment context', () => {
+test('accepts only the configured production deployment context', () => {
   const actual = validateProductionEnvironment(validProductionEnvironment);
   assert.equal(actual.VITE_PUBLIC_SITE_URL, 'https://agent-avatars.dev');
   assert.equal(actual.VITE_SUPABASE_URL, 'https://production.supabase.co');
@@ -73,9 +74,17 @@ test('accepts only the main production deployment context', () => {
     () =>
       validateProductionEnvironment({
         ...validProductionEnvironment,
-        CF_PAGES_BRANCH: 'feature/not-main',
+        CF_PAGES_BRANCH: 'main',
       }),
-    /CF_PAGES_BRANCH must be main/,
+    /CF_PAGES_BRANCH must be production/,
+  );
+  assert.throws(
+    () =>
+      validateProductionEnvironment({
+        ...validProductionEnvironment,
+        CLOUDFLARE_PAGES_PROJECT: 'agent-avatars-preview',
+      }),
+    /CLOUDFLARE_PAGES_PROJECT must be agent-avatars/,
   );
   assert.throws(
     () =>
@@ -196,7 +205,9 @@ test('build wrapper creates and validates deployable Pages output', async (conte
 });
 
 test('build wrapper accepts the production deployment context', async (context) => {
-  const directory = await mkdtemp(path.join(tmpdir(), 'pages-production-build-'));
+  const directory = await mkdtemp(
+    path.join(tmpdir(), 'pages-production-build-'),
+  );
   context.after(() => rm(directory, { recursive: true, force: true }));
   await writeFile(
     path.join(directory, 'package.json'),
