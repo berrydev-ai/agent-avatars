@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import avatarManifest from '../../public/avatars/manifest.json';
 
 const avatarId = 'dicebear-00671c8c38d35c00ba6d';
 const avatarPath = `/avatars/${avatarId}.svg`;
@@ -23,7 +24,9 @@ test('a manifest outage is contained and retry restores the catalog', async ({
   await expectNoSeriousAxeViolations(page);
 
   await alert.getByRole('button', { name: 'Retry' }).click();
-  await expect(page.getByText('504 avatars')).toBeVisible();
+  await expect(
+    page.getByText(`${avatarManifest.avatars.length} avatars`),
+  ).toBeVisible();
   expect(manifestRequests).toBe(2);
 });
 
@@ -65,7 +68,9 @@ test('reduced motion collapses the loading animation', async ({ page }) => {
     Number.parseFloat(getComputedStyle(element).animationDuration),
   );
   expect(animationDurationInSeconds).toBeLessThanOrEqual(0.000_01);
-  await expect(page.getByText('504 avatars')).toBeVisible();
+  await expect(
+    page.getByText(`${avatarManifest.avatars.length} avatars`),
+  ).toBeVisible();
 });
 
 async function mockRejectedClipboard(page: Page): Promise<void> {

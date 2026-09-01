@@ -6,6 +6,34 @@ import {
 } from '../../scripts/avatars/svg-validator';
 import { validateManifest } from '../../scripts/avatars/validate';
 
+function stripFragmentNamespaces(bytes: Uint8Array): string {
+  const svg = Buffer.from(bytes).toString('utf8');
+  const ids = [...svg.matchAll(/\bid=["']([^"']+)["']/giu)].map(
+    (match) => match[1],
+  );
+
+  let canonical = svg;
+  for (const [index, id] of ids.entries()) {
+    if (!id) continue;
+    const escaped = id.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+    const replacement = `fragment-${index}`;
+    canonical = canonical
+      .replace(
+        new RegExp(`\\bid=(["'])${escaped}\\1`, 'gu'),
+        `id="${replacement}"`,
+      )
+      .replace(
+        new RegExp(`url\\((["']?)#${escaped}\\1\\)`, 'gu'),
+        `url(#${replacement})`,
+      )
+      .replace(
+        new RegExp(`(href|xlink:href)=(["'])#${escaped}\\2`, 'gu'),
+        `$1="#${replacement}"`,
+      );
+  }
+  return canonical;
+}
+
 describe('avatar generation', () => {
   it('builds exactly 504 deterministic recipes without personal data', () => {
     const recipes = buildRecipes();
@@ -43,6 +71,16 @@ describe('avatar generation', () => {
     );
     expect(serialized).not.toContain('seed');
     expect(serialized).not.toContain('glassesVariant');
+  });
+
+  it('excludes visually duplicate SVGs from the deployed catalog', () => {
+    const catalog = generateCatalog();
+    const visualSignatures = [...catalog.assets.values()].map((bytes) =>
+      stripFragmentNamespaces(bytes),
+    );
+
+    expect(new Set(visualSignatures).size).toBe(visualSignatures.length);
+    expect(catalog.manifest.avatars).toHaveLength(501);
   });
 });
 

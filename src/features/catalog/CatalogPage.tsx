@@ -153,7 +153,9 @@ export function CatalogPage({ manifest, publicSiteOrigin }: CatalogPageProps) {
 
       <div className="page-shell">
         <section className="intro" aria-labelledby="page-title">
-          <p className="eyebrow">504 deterministic portraits · CC0 artwork</p>
+          <p className="eyebrow">
+            {manifest.avatars.length} deterministic portraits · approved artwork
+          </p>
           <h1 id="page-title">Give every agent a memorable face.</h1>
           <p>
             Search a ready-to-use collection, combine visible traits, and take

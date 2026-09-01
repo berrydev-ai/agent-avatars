@@ -6,6 +6,7 @@ import {
   type APIRequestContext,
   type Locator,
 } from '@playwright/test';
+import avatarManifest from '../../public/avatars/manifest.json';
 
 const mailpitUrl =
   process.env.PLAYWRIGHT_MAILPIT_URL ?? 'http://127.0.0.1:54324';
@@ -129,7 +130,9 @@ test('persists favorites and a fully edited Agent Team', async ({
 
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
-  await expect(catalog.locator(':scope > li')).toHaveCount(504);
+  await expect(catalog.locator(':scope > li')).toHaveCount(
+    avatarManifest.avatars.length,
+  );
   expect(browserErrors).toEqual([]);
 });
 

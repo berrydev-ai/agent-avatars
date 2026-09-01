@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import avatarManifest from '../../public/avatars/manifest.json';
 
 const avatarId = 'dicebear-00671c8c38d35c00ba6d';
 const avatarFilename = `${avatarId}.svg`;
@@ -13,7 +14,9 @@ test('search and tag state survives reload with keyboard-visible results', async
   page,
 }) => {
   await page.goto('/');
-  await expect(page.getByText('504 avatars')).toBeVisible();
+  await expect(
+    page.getByText(`${avatarManifest.avatars.length} avatars`),
+  ).toBeVisible();
 
   const search = page.getByRole('searchbox', { name: 'Search avatars' });
   for (let step = 0; step < 5; step += 1) {

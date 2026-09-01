@@ -1310,25 +1310,6 @@
       ]
     },
     {
-      "id": "dicebear-provenance-24ab4546a4c244e4d44c",
-      "generatorId": "dicebear",
-      "generatorVersion": "10.7.0",
-      "recipeSchemaVersion": 1,
-      "recipeSha256": "76d5995e40a251e6f540530c149f07a4d1089eeb4ca3042e64df7d4b5cc04488",
-      "assetSha256": "24ab4546a4c244e4d44cae22c50aa79bce04fe6b2a183e6c81c0cf4a5952136b",
-      "inputAssetSha256s": [],
-      "aiGenerated": false,
-      "sourceUrl": "https://www.dicebear.com/",
-      "publicationPolicyId": "dicebear-cc0-v1",
-      "publicationPolicyRevision": "2026-08-27",
-      "approvalRefs": [
-        {
-          "system": "multica",
-          "id": "BD-11"
-        }
-      ]
-    },
-    {
       "id": "dicebear-provenance-24d5ff12184d8c0fa36d",
       "generatorId": "dicebear",
       "generatorVersion": "10.7.0",
@@ -1620,25 +1601,6 @@
       "recipeSchemaVersion": 1,
       "recipeSha256": "ee6faf3bba6fabb701b5675600dcf6cddc04c7eaf3c11923f6a68dffb1596a31",
       "assetSha256": "2c97355daa03e1594d0a64ed88f21ae9111df0c685e4b1c68822a9abee9ae571",
-      "inputAssetSha256s": [],
-      "aiGenerated": false,
-      "sourceUrl": "https://www.dicebear.com/",
-      "publicationPolicyId": "dicebear-cc0-v1",
-      "publicationPolicyRevision": "2026-08-27",
-      "approvalRefs": [
-        {
-          "system": "multica",
-          "id": "BD-11"
-        }
-      ]
-    },
-    {
-      "id": "dicebear-provenance-2cdbfe391fe7aac922d6",
-      "generatorId": "dicebear",
-      "generatorVersion": "10.7.0",
-      "recipeSchemaVersion": 1,
-      "recipeSha256": "580290a27b711aa0b2a9fa82cb9db55394c109ff6a19ba026a5e9fc263e6c663",
-      "assetSha256": "2cdbfe391fe7aac922d6465cc2ced80662cf6bdc67043b31ff3bf3babcc7998c",
       "inputAssetSha256s": [],
       "aiGenerated": false,
       "sourceUrl": "https://www.dicebear.com/",
@@ -2171,25 +2133,6 @@
       "recipeSchemaVersion": 1,
       "recipeSha256": "3ac0bb787475d7da6444120a2cc7c6a1a34c3b7051356341131e0171fa3950af",
       "assetSha256": "3adf64dcaf5a53e3ff60fb4ad19f63f80b3eb1c2ad0968f8b1d9043e91a92f75",
-      "inputAssetSha256s": [],
-      "aiGenerated": false,
-      "sourceUrl": "https://www.dicebear.com/",
-      "publicationPolicyId": "dicebear-cc0-v1",
-      "publicationPolicyRevision": "2026-08-27",
-      "approvalRefs": [
-        {
-          "system": "multica",
-          "id": "BD-11"
-        }
-      ]
-    },
-    {
-      "id": "dicebear-provenance-3b1ee387800d193731d7",
-      "generatorId": "dicebear",
-      "generatorVersion": "10.7.0",
-      "recipeSchemaVersion": 1,
-      "recipeSha256": "fbfd770bf07416d7011f2e6fbbdfc6d2acfaa9b7ca7e79909fcac1b4a59ca0eb",
-      "assetSha256": "3b1ee387800d193731d70928f6ace66dbd8e7a2a080cc65a71c8615bc7c6c504",
       "inputAssetSha256s": [],
       "aiGenerated": false,
       "sourceUrl": "https://www.dicebear.com/",
@@ -11101,29 +11044,6 @@
       "provenanceId": "dicebear-provenance-24a91bbaebdbb82676b0"
     },
     {
-      "id": "dicebear-24ab4546a4c244e4d44c",
-      "generatorId": "dicebear",
-      "preset": "pixel-art-neutral",
-      "assetPath": "/avatars/dicebear-24ab4546a4c244e4d44c.svg",
-      "assetExtension": "svg",
-      "mediaType": "image/svg+xml",
-      "assetSha256": "24ab4546a4c244e4d44cae22c50aa79bce04fe6b2a183e6c81c0cf4a5952136b",
-      "width": 256,
-      "height": 256,
-      "alt": "Pixel Art Neutral agent avatar with a smile, glasses, big eyes, a bald silhouette, orange background",
-      "tags": [
-        "accessory:glasses",
-        "color:orange",
-        "expression:smile",
-        "eye:big",
-        "hair:bald",
-        "theme:nerd",
-        "theme:retro"
-      ],
-      "rightsId": "dicebear-cc0-1-0",
-      "provenanceId": "dicebear-provenance-24ab4546a4c244e4d44c"
-    },
-    {
       "id": "dicebear-24d5ff12184d8c0fa36d",
       "generatorId": "dicebear",
       "preset": "lorelei",
@@ -11445,28 +11365,6 @@
       ],
       "rightsId": "dicebear-cc0-1-0",
       "provenanceId": "dicebear-provenance-2c97355daa03e1594d0a"
-    },
-    {
-      "id": "dicebear-2cdbfe391fe7aac922d6",
-      "generatorId": "dicebear",
-      "preset": "lorelei-neutral",
-      "assetPath": "/avatars/dicebear-2cdbfe391fe7aac922d6.svg",
-      "assetExtension": "svg",
-      "mediaType": "image/svg+xml",
-      "assetSha256": "2cdbfe391fe7aac922d6465cc2ced80662cf6bdc67043b31ff3bf3babcc7998c",
-      "width": 256,
-      "height": 256,
-      "alt": "Lorelei Neutral agent avatar with a smile, glasses, big eyes, a bald silhouette, yellow background",
-      "tags": [
-        "accessory:glasses",
-        "color:yellow",
-        "expression:smile",
-        "eye:big",
-        "hair:bald",
-        "theme:hand-drawn"
-      ],
-      "rightsId": "dicebear-cc0-1-0",
-      "provenanceId": "dicebear-provenance-2cdbfe391fe7aac922d6"
     },
     {
       "id": "dicebear-2ce9683fd39b9743a026",
@@ -12054,28 +11952,6 @@
       ],
       "rightsId": "dicebear-cc0-1-0",
       "provenanceId": "dicebear-provenance-3adf64dcaf5a53e3ff60"
-    },
-    {
-      "id": "dicebear-3b1ee387800d193731d7",
-      "generatorId": "dicebear",
-      "preset": "lorelei-neutral",
-      "assetPath": "/avatars/dicebear-3b1ee387800d193731d7.svg",
-      "assetExtension": "svg",
-      "mediaType": "image/svg+xml",
-      "assetSha256": "3b1ee387800d193731d70928f6ace66dbd8e7a2a080cc65a71c8615bc7c6c504",
-      "width": 256,
-      "height": 256,
-      "alt": "Lorelei Neutral agent avatar with a smile, glasses, big eyes, a bald silhouette, orange background",
-      "tags": [
-        "accessory:glasses",
-        "color:orange",
-        "expression:smile",
-        "eye:big",
-        "hair:bald",
-        "theme:hand-drawn"
-      ],
-      "rightsId": "dicebear-cc0-1-0",
-      "provenanceId": "dicebear-provenance-3b1ee387800d193731d7"
     },
     {
       "id": "dicebear-3b234b34b426b37e9bc9",

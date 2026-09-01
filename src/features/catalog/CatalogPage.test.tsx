@@ -67,6 +67,9 @@ describe('CatalogPage', () => {
       'true',
     );
     expect(screen.getByText('1 avatar')).toBeInTheDocument();
+    expect(
+      screen.getByText('3 deterministic portraits · approved artwork'),
+    ).toBeInTheDocument();
   });
 
   it('combines submitted text and tag filters, updates the URL, and resets', async () => {

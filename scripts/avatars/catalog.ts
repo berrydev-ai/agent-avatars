@@ -9,6 +9,7 @@ import { canonicalJson } from './canonical-json';
 import { PALETTE, STYLE_CONFIGS, TAG_DEFINITIONS } from './config';
 import { generateDiceBearAsset } from './dicebear-adapter';
 import { sha256 } from './hash';
+import { canonicalizeSvgFragmentIds } from './svg-validator';
 
 const AVATARS_PER_STYLE = 84;
 const RIGHTS_REVIEW_SOURCE = [
@@ -77,12 +78,17 @@ export function generateCatalog(
   const assets = new Map<string, Uint8Array>();
   const avatars: AvatarRecord[] = [];
   const provenance: ProvenanceRecord[] = [];
+  const visualHashes = new Set<string>();
 
   for (const recipe of recipes) {
     const config = STYLE_CONFIGS.find(({ slug }) => slug === recipe.preset);
     if (!config)
       throw new Error(`Unregistered DiceBear preset: ${recipe.preset}`);
     const generated = generateDiceBearAsset(recipe, config);
+    const visualSha256 = sha256(canonicalizeSvgFragmentIds(generated.bytes));
+    if (visualHashes.has(visualSha256)) continue;
+    visualHashes.add(visualSha256);
+
     const assetSha256 = sha256(generated.bytes);
     const id = `dicebear-${assetSha256.slice(0, 20)}`;
     const assetPath = `/avatars/${id}.svg`;
