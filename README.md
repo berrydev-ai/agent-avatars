@@ -13,8 +13,14 @@ Implementation starts from these approved documents:
 - [`docs/specs/mvp.md`](docs/specs/mvp.md) — product and engineering specification
 - [`docs/decisions/0001-mvp-architecture.md`](docs/decisions/0001-mvp-architecture.md) — architecture decision record
 - [`docs/decisions/0002-generator-adapters-and-provenance.md`](docs/decisions/0002-generator-adapters-and-provenance.md) — multi-generator and AI-ready boundary
+- [`docs/decisions/0003-composable-avatar-part-packs.md`](docs/decisions/0003-composable-avatar-part-packs.md) — deterministic mix-and-match part packs
 - [`docs/contracts/mvp-contracts.md`](docs/contracts/mvp-contracts.md) — avatar, data, client, environment, and licensing contracts
 - [`docs/acceptance-test-matrix.md`](docs/acceptance-test-matrix.md) — executable release requirements
+
+Local composable-part imports and preview generation are documented in
+[`docs/avatar-parts.md`](docs/avatar-parts.md). Source-derived packs remain
+local-only by default. The reviewed 256-avatar Premium Flat sample is published
+under its owned-work rights and provenance records.
 
 Stage 2 modules share the repository-root tooling. Documentation integrity can
 always be checked with:

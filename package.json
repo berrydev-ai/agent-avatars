@@ -10,6 +10,8 @@
   "scripts": {
     "dev": "vite",
     "generate:avatars": "tsx scripts/avatars/generate.ts",
+    "parts:import-premium-flat": "tsx scripts/avatar-parts/import-premium-flat.ts",
+    "parts:generate": "tsx scripts/avatar-parts/generate.ts",
     "validate:manifest": "tsx scripts/avatars/validate-manifest.ts",
     "check:database-types": "node scripts/supabase/check-generated-types.mjs",
     "format": "prettier --write .",

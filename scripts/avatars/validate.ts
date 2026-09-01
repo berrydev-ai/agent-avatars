@@ -17,6 +17,18 @@ export async function validateManifest(
   if (manifest.avatars.length < minimum) {
     throw new Error(`Manifest must contain at least ${minimum} avatars.`);
   }
+  for (const rights of manifest.rights) {
+    if (
+      !rights.downloadAllowed ||
+      !rights.redistributionAllowed ||
+      !rights.commercialUseAllowed ||
+      !rights.modificationsAllowed
+    ) {
+      throw new Error(
+        `Rights ${rights.id} must allow download, redistribution, commercial use, and modification.`,
+      );
+    }
+  }
 
   assertSortedUnique(
     manifest.generators.map(({ id }) => id),

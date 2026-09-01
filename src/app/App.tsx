@@ -71,7 +71,7 @@ export function App() {
           aria-label="Loading avatars"
         >
           <p className="eyebrow">Opening the catalog</p>
-          <h1>Finding 504 distinctive faces…</h1>
+          <h1>Finding distinctive faces…</h1>
           <div className="loading-grid" aria-hidden="true">
             {Array.from({ length: 6 }, (_, index) => (
               <span key={index} />

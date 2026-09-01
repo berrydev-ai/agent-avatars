@@ -28,7 +28,7 @@ export function CatalogControls({
     <section className="catalog-controls" aria-labelledby="catalog-heading">
       <div className="controls-heading">
         <div>
-          <p className="eyebrow">Open-source collection</p>
+          <p className="eyebrow">Approved collection</p>
           <h2 id="catalog-heading">Find a face for every agent</h2>
         </div>
         <p className="result-count" aria-live="polite">

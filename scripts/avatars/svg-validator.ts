@@ -39,6 +39,36 @@ export function normalizeSvg(svg: string): Uint8Array {
   return Buffer.from(normalized, 'utf8');
 }
 
+export function canonicalizeSvgFragmentIds(bytes: Uint8Array): Uint8Array {
+  const svg = Buffer.from(bytes).toString('utf8');
+  const canonicalIds = new Map<string, string>();
+  for (const match of svg.matchAll(/\bid=["']([^"']+)["']/giu)) {
+    const id = match[1];
+    if (id && !canonicalIds.has(id)) {
+      canonicalIds.set(id, `fragment-${canonicalIds.size}`);
+    }
+  }
+
+  const canonical = svg
+    .replace(
+      /\bid=(["'])([^"']+)\1/giu,
+      (_match, _quote: string, id: string) =>
+        `id="${canonicalIds.get(id) ?? id}"`,
+    )
+    .replace(
+      /url\((["']?)#([^)'"]+)\1\)/giu,
+      (_match, _quote: string, id: string) =>
+        `url(#${canonicalIds.get(id) ?? id})`,
+    )
+    .replace(
+      /(href|xlink:href)=(["'])#([^"']+)\2/giu,
+      (_match, attribute: string, _quote: string, id: string) =>
+        `${attribute}="#${canonicalIds.get(id) ?? id}"`,
+    );
+
+  return Buffer.from(canonical, 'utf8');
+}
+
 export function validatePublishedSvg(bytes: Uint8Array): ValidatedSvg {
   if (bytes.byteLength === 0 || bytes.byteLength > MAX_SVG_BYTES) {
     throw new Error('SVG exceeds the publication size limit.');
