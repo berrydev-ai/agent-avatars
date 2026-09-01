@@ -4,6 +4,7 @@ import process from 'node:process';
 import {
   inspectPagesOutput,
   scanPagesOutputForSecrets,
+  validateProductionEnvironment,
   validatePreviewEnvironment,
   writePagesHeaders,
 } from './pages-config.mjs';
@@ -28,7 +29,10 @@ function run(command, args, environment) {
   });
 }
 
-const environment = validatePreviewEnvironment(process.env);
+const environment =
+  process.env.VITE_APP_ENV === 'production'
+    ? validateProductionEnvironment(process.env)
+    : validatePreviewEnvironment(process.env);
 await run('npm', ['run', 'build'], environment);
 await writePagesHeaders('dist', environment.VITE_SUPABASE_URL);
 const summary = await inspectPagesOutput('dist');
