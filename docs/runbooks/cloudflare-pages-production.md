@@ -23,7 +23,8 @@ Store these environment secrets:
 
 - `CLOUDFLARE_API_TOKEN`: a dedicated token with Account / Cloudflare Pages /
   Edit for the Berry Development account. Do not grant DNS, zone, billing, or
-  unrelated product permissions.
+  unrelated product permissions. The current `agent-avatars-github-pages`
+  token expires September 1, 2027; rotate it before that date.
 - `CLOUDFLARE_ACCOUNT_ID`: the Berry Development account identifier.
 
 Store these environment variables:
