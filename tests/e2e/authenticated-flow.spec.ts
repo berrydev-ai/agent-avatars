@@ -6,7 +6,7 @@ import {
   type APIRequestContext,
   type Locator,
 } from '@playwright/test';
-import avatarManifest from '../../public/avatars/manifest.json';
+import avatarManifest from '../../public/avatars/manifest.json' with { type: 'json' };
 
 const mailpitUrl =
   process.env.PLAYWRIGHT_MAILPIT_URL ?? 'http://127.0.0.1:54324';

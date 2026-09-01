@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import avatarManifest from '../../public/avatars/manifest.json';
+import avatarManifest from '../../public/avatars/manifest.json' with { type: 'json' };
 
 const avatarId = 'dicebear-00671c8c38d35c00ba6d';
 const avatarFilename = `${avatarId}.svg`;

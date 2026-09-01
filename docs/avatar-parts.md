@@ -45,10 +45,15 @@ Choose a new output path for another run.
 
 ## Publication boundary
 
-The supplied ZIP contains no license file. The imported pack is therefore marked
-`local-only`, and `assertPartPackPublishable()` prevents it from entering the
-public catalog. Do not commit or publish the source-derived vectors until a
-rights record confirms redistribution, commercial use, and modification.
+The supplied ZIP contains no license file, so every new import remains
+`local-only`, and `assertPartPackPublishable()` prevents an unreviewed pack from
+entering the public catalog.
+
+On 2026-09-01, Berry Development, LLC confirmed ownership and approved download,
+redistribution, commercial use, and modification for the reviewed 256-avatar
+sample in PR #14. The catalog commits only that bounded sample, its recipes, and
+its exact owned-work evidence hash. The complete source pack and unreviewed
+combinations remain below the ignored `local/avatar-parts/` directory.
 
 After rights approval, semantic curation can split the unnamed Illustrator
 groups into compatible slots such as `hair`, `eyes`, `mouth`, `facial-hair`, and

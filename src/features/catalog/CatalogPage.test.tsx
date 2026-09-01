@@ -70,6 +70,7 @@ describe('CatalogPage', () => {
     expect(
       screen.getByText('3 deterministic portraits · approved artwork'),
     ).toBeInTheDocument();
+    expect(screen.getByText('Approved collection')).toBeInTheDocument();
   });
 
   it('combines submitted text and tag filters, updates the URL, and resets', async () => {

@@ -19,7 +19,8 @@ Implementation starts from these approved documents:
 
 Local composable-part imports and preview generation are documented in
 [`docs/avatar-parts.md`](docs/avatar-parts.md). Source-derived packs remain
-outside the public catalog until their rights evidence is approved.
+local-only by default. The reviewed 256-avatar Premium Flat sample is published
+under its owned-work rights and provenance records.
 
 Stage 2 modules share the repository-root tooling. Documentation integrity can
 always be checked with:

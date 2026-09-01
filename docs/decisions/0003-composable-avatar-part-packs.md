@@ -38,6 +38,11 @@ generated samples below the Git-ignored `local/avatar-parts/` directory. Mark
 the pack `local-only` until redistribution, commercial-use, and modification
 rights are documented.
 
+Approve a bounded generated sample separately from the raw pack. The approved
+sample records its source-pack hash, exact recipes, final asset hashes,
+owned-work evidence, and review reference before the catalog generator can
+merge it into the public manifest.
+
 Semantic extraction of the source's unnamed nested groups is a later curation
 step. New slots are additive to the pack contract and do not change catalog
 consumers or existing content-addressed asset IDs.
@@ -46,8 +51,8 @@ consumers or existing content-addressed asset IDs.
 
 ### Publish the 20 full characters directly
 
-Rejected. It adds only 20 identities, does not advance combinatorial generation,
-and lacks the required rights evidence.
+Rejected. It adds only 20 identities and does not advance combinatorial
+generation.
 
 ### Infer semantic parts from unnamed Illustrator groups
 
@@ -67,8 +72,10 @@ clients.
   characters and four decorative part categories.
 - Small samples can cover the full recipe space without materializing every SVG.
 - Unsafe SVG markup and cross-part ID collisions fail before output publication.
-- The public 504-avatar DiceBear catalog remains unchanged.
-- Public use of Premium Flat artwork remains blocked until rights evidence is
-  added and reviewed.
+- Owner approval recorded on 2026-09-01 permits the reviewed 256-avatar Premium
+  Flat sample to enter the public catalog; the raw pack remains local-only.
+- The deployed catalog contains 757 unique rendered avatars: 501 DiceBear and
+  256 Premium Flat. Render-level deduplication removes three DiceBear recipes
+  whose SVGs differ only by document-local fragment IDs.
 - Hair, eyes, mouths, facial hair, and clothing are not yet independently
   swappable; achieving that requires a visual semantic-curation pass.

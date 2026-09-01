@@ -364,9 +364,9 @@ Additional invariants:
 - Every provenance record resolves the exact active publication-policy ID and
   revision. Its review references match that policy; AI records include every
   approval reference and fail when the approval's `reviewBy` date has passed.
-- MVP publication accepts only rights records approved by the current rights
-  policy (`CC0-1.0` initially), even though the schema can represent later
-  SPDX, provider-terms, or owned-output decisions.
+- MVP publication accepts `CC0-1.0` and the reviewed Premium Flat owned-work
+  record. Additional SPDX, provider-terms, or owned-output decisions require
+  their own exact evidence digest and approval reference.
 - Because v1 always exposes open, copy, and download, a published rights record
   must allow download, redistribution, commercial use, and modification. A later
   restricted-rights source requires an explicit rights-aware UI/contract change;
